@@ -8,12 +8,12 @@ Gives AI assistants visibility into your RAS environment — infrastructure, sit
 
 ## Scope and intended use
 
-This server uses the MCP **stdio transport**, which means it runs as a local subprocess of the MCP client (Claude Desktop, Claude Code, Cursor, etc.) on the same machine. It is intended for:
+Two transports are supported, selected via the `MCP_TRANSPORT` environment variable:
 
-- **Local use** by an individual administrator on their own workstation, against a RAS environment they already have credentials for.
-- **Development and test** environments, or read-only inspection of a production farm from a trusted admin workstation.
+- **`stdio`** (default) — launched as a local subprocess by the MCP client (Claude Desktop, Claude Code, Cursor, etc.). Intended for an individual administrator on their own workstation, or for development and test environments. Credentials come from the launching process's environment; there is no network listener.
+- **`http`** — streamable-HTTP listener with a required bearer token. Intended for trusted-network deployments where one server is shared by multiple clients (e.g. behind a reverse proxy that adds TLS). Defaults to binding `127.0.0.1:3000`; binding to all interfaces is opt-in.
 
-It is **not** intended to be exposed as a network service or shared between users. Credentials are read from the local environment of the launching process; there is no auth layer, multi-tenancy, or rate limiting. If you need a remote/shared deployment, an HTTP-transport variant would need to be built on top (see *Roadmap* below).
+In either mode this server holds a RAS administrator session and exposes 41 read-only tools. It does not expose write or destructive tools and does not provide multi-tenancy or rate limiting — treat it as an admin-equivalent service and protect access accordingly.
 
 **API compatibility:** verified against the **Parallels RAS v21** REST API. Resources used are stable across v18–v21.
 
@@ -34,6 +34,8 @@ npm run build
 
 ## Environment Variables
 
+### Connection to RAS
+
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `RAS_HOST` | Yes | — | RAS server hostname or IP address |
@@ -42,7 +44,18 @@ npm run build
 | `RAS_PORT` | No | `20443` | REST API port |
 | `RAS_IGNORE_TLS` | No | `true` | Skip TLS certificate verification (for self-signed certs) |
 
+### Transport
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `MCP_TRANSPORT` | No | `stdio` | `stdio` or `http` |
+| `MCP_HTTP_BEARER_TOKEN` | HTTP only | — | Bearer token clients must present in `Authorization: Bearer …`. Server refuses to start without it. Generate with `openssl rand -hex 32`. |
+| `MCP_HTTP_HOST` | No | `127.0.0.1` | Bind address. Set to `0.0.0.0` to expose on all interfaces (front with TLS termination). |
+| `MCP_HTTP_PORT` | No | `3000` | Listen port. |
+
 ## Configuration
+
+The examples below cover the **stdio** transport, which is the default and what most users want. For the **HTTP** transport, see [Running over HTTP](#running-over-http) further down.
 
 ### Claude Desktop
 
@@ -91,6 +104,43 @@ node /path/to/ParallelsRAS_MCP/build/index.js
 ```
 
 with the required environment variables set in the client's MCP server configuration.
+
+## Running over HTTP
+
+The HTTP transport implements [MCP Streamable HTTP](https://modelcontextprotocol.io/specification/) and runs as a long-lived process. Use it when you want one server shared by multiple clients on a trusted network — typically behind a reverse proxy that terminates TLS.
+
+### Start the server
+
+```bash
+export RAS_HOST=ras-server.example.com
+export RAS_USERNAME=administrator
+export RAS_PASSWORD=your-password
+export MCP_TRANSPORT=http
+export MCP_HTTP_BEARER_TOKEN=$(openssl rand -hex 32)   # required
+# export MCP_HTTP_HOST=127.0.0.1                       # default; set 0.0.0.0 to expose
+# export MCP_HTTP_PORT=3000
+
+npm run start:http
+```
+
+The server logs the listen address on startup. The MCP endpoint is `POST /mcp`. Requests must include `Authorization: Bearer <MCP_HTTP_BEARER_TOKEN>`; missing or wrong tokens return `401`.
+
+### Connect a client
+
+For clients that support a streamable-HTTP MCP server, point them at `http://<host>:<port>/mcp` with the bearer token in the `Authorization` header. For example, the Claude Code CLI:
+
+```bash
+claude mcp add parallels-ras --transport http \
+  --header "Authorization: Bearer $MCP_HTTP_BEARER_TOKEN" \
+  http://your-server:3000/mcp
+```
+
+### Production checklist
+
+- **Always** front this with TLS — a reverse proxy (nginx, Caddy, Traefik) terminating HTTPS, with the MCP server bound to `127.0.0.1` and reached only via the proxy.
+- Treat `MCP_HTTP_BEARER_TOKEN` as a credential — at least 32 bytes of entropy, stored in a secret manager, rotated when staff leave.
+- Restrict network reachability (firewall, VPN, private subnet). The bearer check is the only auth layer in the server itself.
+- The RAS admin credentials sit on the same host as the listener — anyone with shell access on that host can read them. Do not run this on a multi-tenant box.
 
 ## Available Tools (41 total)
 
@@ -188,8 +238,8 @@ Module file names (`infrastructure.ts`, `site-settings.ts`, etc.) are an interna
 
 ## Roadmap
 
-- **HTTP / streamable-HTTP transport** — would enable remote or shared deployments (single MCP server, multiple clients, proper auth in front). The stdio model in this repo is deliberately local-only; an HTTP variant is a separate piece of work.
-- **Write operations** — out of scope for this repo. A separate server should host any tool that mutates RAS state, so read-only tools can stay safe to auto-approve.
+- **Write operations** — out of scope for this repo. A separate server should host any tool that mutates RAS state, so the read-only tools here can stay safe to auto-approve.
+- **OAuth / OIDC for the HTTP transport** — currently a single shared bearer token. Per-user identity would let multiple clients share a deployment without sharing credentials.
 
 ## Contributing
 
@@ -197,7 +247,9 @@ Issues and pull requests are welcome. Please open an issue first for anything be
 
 ## History
 
-The initial v1.0.0 release was a draft scaffold whose REST API paths had been modelled from the documentation table-of-contents headings rather than the real endpoints. v1.0.1 corrects all 41 tool paths against the Parallels RAS v21 REST API and adds a build-time path verifier (`scripts/verify-tool-paths.mjs`) against the bundled OpenAPI spec.
+- **v1.1.0** — adds an opt-in streamable-HTTP transport with bearer-token auth, alongside the existing stdio transport.
+- **v1.0.1** — corrects all 41 tool paths against the Parallels RAS v21 REST API and adds a build-time path verifier (`scripts/verify-tool-paths.mjs`) against the bundled OpenAPI spec.
+- **v1.0.0** — draft scaffold; REST API paths had been modelled from the documentation table-of-contents headings rather than the real endpoints. Superseded by v1.0.1.
 
 ## License
 

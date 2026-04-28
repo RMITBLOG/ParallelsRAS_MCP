@@ -1,12 +1,13 @@
 {
   "name": "parallels-ras-mcp",
-  "version": "1.0.1",
-  "description": "MCP server for Parallels RAS REST API - read-only infrastructure monitoring",
+  "version": "1.1.0",
+  "description": "MCP server for Parallels RAS REST API - read-only infrastructure monitoring (stdio + HTTP transports)",
   "type": "module",
   "main": "build/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node build/index.js"
+    "start": "node build/index.js",
+    "start:http": "MCP_TRANSPORT=http node build/index.js"
   },
   "author": "Ryan Mangan",
   "license": "MIT",
