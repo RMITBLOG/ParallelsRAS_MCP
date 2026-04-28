@@ -14,7 +14,6 @@ import { register as registerPolicies } from "./tools/policies.js";
 import { register as registerFarmSettings } from "./tools/farm-settings.js";
 import { register as registerPublishing } from "./tools/publishing.js";
 import { register as registerRdSessions } from "./tools/rd-sessions.js";
-import { register as registerHelpSupport } from "./tools/help-support.js";
 
 const server = new McpServer({
   name: "parallels-ras",
@@ -28,7 +27,6 @@ registerPolicies(server);
 registerFarmSettings(server);
 registerPublishing(server);
 registerRdSessions(server);
-registerHelpSupport(server);
 
 async function main() {
   // Validate required env vars before starting the transport

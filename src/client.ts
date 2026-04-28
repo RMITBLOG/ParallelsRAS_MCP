@@ -2,6 +2,13 @@
  * Shared RAS REST API client for the Parallels RAS MCP Server.
  * Handles authentication, session management, headers, and GET requests.
  * Includes request timeouts, error sanitisation, and graceful shutdown.
+ *
+ * API surface verified against the v19 OpenAPI spec at
+ *   https://update.parallels.com/ras/v19/docs/en_US/Parallels-RAS-REST-API-Guide/swagger.json
+ * Real API paths are flat under /api/<PascalCaseResource> — do NOT model
+ * paths after the documentation TOC headings (Infrastructure, Site Settings,
+ * Farm Settings, etc.) which are narrative groupings, not URL segments.
+ *
  * @author Ryan Mangan
  * @created 2026-02-10
  */
@@ -74,7 +81,7 @@ class RasClient {
       );
     }
 
-    const response = await fetch(`${this.baseUrl}/api/session/logon`, {
+    const response = await fetch(`${this.baseUrl}/api/Session/logon`, {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify({
@@ -106,7 +113,7 @@ class RasClient {
     if (!this.authToken) return;
 
     try {
-      await fetch(`${this.baseUrl}/api/session/logoff`, {
+      await fetch(`${this.baseUrl}/api/Session/logoff`, {
         method: "POST",
         headers: {
           ...this.headers,

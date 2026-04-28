@@ -32,7 +32,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/publishing/apps/rds");
+        const data = await rasClient.get("/api/PubItems/Apps/RDS");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve published RDS apps") }], isError: true };
@@ -54,7 +54,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/publishing/apps/vdi");
+        const data = await rasClient.get("/api/PubItems/Apps/VDI");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve published VDI apps") }], isError: true };
@@ -76,7 +76,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/publishing/apps/avd");
+        const data = await rasClient.get("/api/PubItems/Apps/AVD");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve published AVD apps") }], isError: true };
@@ -84,24 +84,68 @@ export function register(server: McpServer): void {
     }
   );
 
-  // ── Published Desktops ──────────────────────────────────────────────
+  // ── Published RDS Desktops ──────────────────────────────────────────
   server.registerTool(
-    "ras_pub_get_desktops",
+    "ras_pub_get_rds_desktops",
     {
-      title: "Published Desktops",
+      title: "Published RDS Desktops",
       description:
-        "List published desktop resources, including full desktops available to " +
-        "users via RDS, VDI, or AVD. Use this to review desktop assignments, " +
-        "check which desktop types are published, or verify user access.",
+        "List published RDS (Remote Desktop Services) desktop resources. RDS desktops " +
+        "deliver full Windows desktops from shared session hosts. Use this to review " +
+        "RDS desktop assignments or troubleshoot desktop launch issues.",
       annotations: READ_ONLY_ANNOTATIONS,
       inputSchema: {},
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/publishing/desktops");
+        const data = await rasClient.get("/api/PubItems/Desktops/RDS");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve published desktops") }], isError: true };
+        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve published RDS desktops") }], isError: true };
+      }
+    }
+  );
+
+  // ── Published VDI Desktops ──────────────────────────────────────────
+  server.registerTool(
+    "ras_pub_get_vdi_desktops",
+    {
+      title: "Published VDI Desktops",
+      description:
+        "List published VDI (Virtual Desktop Infrastructure) desktop resources. VDI " +
+        "desktops deliver dedicated virtual machines per user. Use this to review " +
+        "VDI desktop assignments or verify per-user desktop allocation.",
+      annotations: READ_ONLY_ANNOTATIONS,
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        const data = await rasClient.get("/api/PubItems/Desktops/VDI");
+        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+      } catch (err) {
+        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve published VDI desktops") }], isError: true };
+      }
+    }
+  );
+
+  // ── Published AVD Desktops ──────────────────────────────────────────
+  server.registerTool(
+    "ras_pub_get_avd_desktops",
+    {
+      title: "Published AVD Desktops",
+      description:
+        "List published Azure Virtual Desktop (AVD) desktop resources. AVD desktops " +
+        "are delivered from Azure-hosted session hosts. Use this to review AVD desktop " +
+        "assignments or verify Azure-based desktop publishing.",
+      annotations: READ_ONLY_ANNOTATIONS,
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        const data = await rasClient.get("/api/PubItems/Desktops/AVD");
+        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+      } catch (err) {
+        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve published AVD desktops") }], isError: true };
       }
     }
   );
@@ -120,7 +164,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/publishing/folders");
+        const data = await rasClient.get("/api/PubItems/Folders");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve publishing folders") }], isError: true };
@@ -142,7 +186,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/publishing/status");
+        const data = await rasClient.get("/api/PubItems/status");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve publishing status") }], isError: true };
@@ -164,7 +208,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/publishing");
+        const data = await rasClient.get("/api/PubItems");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve all published items") }], isError: true };

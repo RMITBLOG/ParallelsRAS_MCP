@@ -30,7 +30,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/rd-sessions");
+        const data = await rasClient.get("/api/RDSession");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve RD sessions") }], isError: true };

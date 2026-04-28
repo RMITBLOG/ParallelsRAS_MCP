@@ -31,7 +31,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/agents");
+        const data = await rasClient.get("/api/Agent");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve agents") }], isError: true };
@@ -53,7 +53,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/connection-brokers");
+        const data = await rasClient.get("/api/Broker");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve connection brokers") }], isError: true };
@@ -75,7 +75,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/providers");
+        const data = await rasClient.get("/api/Provider");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve providers") }], isError: true };
@@ -97,7 +97,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/rd-session-hosts/rds/host");
+        const data = await rasClient.get("/api/RDS/Host");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve RDS hosts") }], isError: true };
@@ -119,7 +119,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/rd-session-hosts/rds/hostpool");
+        const data = await rasClient.get("/api/RDS/HostPool");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve RDS host pools") }], isError: true };
@@ -141,7 +141,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/certificates");
+        const data = await rasClient.get("/api/Certificates");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve certificates") }], isError: true };
@@ -163,7 +163,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/halbs/status");
+        const data = await rasClient.get("/api/HALB/status");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve HALB status") }], isError: true };
@@ -185,7 +185,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/enrollment-servers/status");
+        const data = await rasClient.get("/api/EnrollmentServer/Status");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve enrollment server status") }], isError: true };
@@ -207,7 +207,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/vdi/host-pool");
+        const data = await rasClient.get("/api/VDI/HostPool");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve VDI host pools") }], isError: true };
@@ -229,7 +229,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/vdi/template");
+        const data = await rasClient.get("/api/VDI/Template");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve VDI templates") }], isError: true };
@@ -252,7 +252,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/gateway/status");
+        const data = await rasClient.get("/api/Gateway/status");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve gateway status") }], isError: true };
@@ -274,7 +274,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/sites/status");
+        const data = await rasClient.get("/api/Site/status");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve sites") }], isError: true };
@@ -296,7 +296,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/saml-idps");
+        const data = await rasClient.get("/api/SAMLIDP");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve SAML identity providers") }], isError: true };
@@ -318,7 +318,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/infrastructure/themes");
+        const data = await rasClient.get("/api/Theme");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve themes") }], isError: true };

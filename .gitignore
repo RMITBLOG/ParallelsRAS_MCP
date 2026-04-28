@@ -1,0 +1,9 @@
+node_modules/
+build/
+*.log
+.DS_Store
+
+# Local dev tooling — not part of the published package
+scripts/
+spec/
+.env

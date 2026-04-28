@@ -31,7 +31,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/farm-settings/administrators");
+        const data = await rasClient.get("/api/AdminAccount");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve administrators") }], isError: true };
@@ -53,7 +53,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/farm-settings/farm");
+        const data = await rasClient.get("/api/FarmSettings");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve farm config") }], isError: true };
@@ -75,7 +75,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/farm-settings/licensing");
+        const data = await rasClient.get("/api/License");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve licensing info") }], isError: true };
@@ -97,7 +97,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/farm-settings/webservice/version");
+        const data = await rasClient.get("/api/WebService/version");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve version info") }], isError: true };
@@ -119,7 +119,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/farm-settings/performance-monitor");
+        const data = await rasClient.get("/api/PerformanceMonitor");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve performance monitor") }], isError: true };
@@ -141,7 +141,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/farm-settings/mailbox");
+        const data = await rasClient.get("/api/MailboxSettings");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve mailbox settings") }], isError: true };
@@ -163,7 +163,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/farm-settings/reporting");
+        const data = await rasClient.get("/api/Reporting");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve reporting config") }], isError: true };

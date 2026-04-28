@@ -1,7 +1,11 @@
 /**
  * Site settings tools for the Parallels RAS MCP Server.
- * Provides read-only access to AD integration, connection settings, FSLogix,
+ * Provides read-only access to AD integration, connection settings,
  * load balancing, MFA, printing, notifications, URL redirection, and tenant broker.
+ *
+ * Note: FSLogix has no site-level REST endpoint — it is exposed only at
+ * per-host-pool / per-AVD-template scope. PowerShell cmdlets are the canonical
+ * site-wide interface. A scoped tool can be added later if required.
  * @author Ryan Mangan
  * @created 2026-02-10
  */
@@ -31,7 +35,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/site-settings/ad-integration");
+        const data = await rasClient.get("/api/ADIntegrationSettings");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve AD integration") }], isError: true };
@@ -53,32 +57,10 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/site-settings/connection-and-authentication/connection-settings");
+        const data = await rasClient.get("/api/ConnectionSettings");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve connection settings") }], isError: true };
-      }
-    }
-  );
-
-  // ── FSLogix ─────────────────────────────────────────────────────────
-  server.registerTool(
-    "ras_site_get_fslogix",
-    {
-      title: "FSLogix Profile Config",
-      description:
-        "Get FSLogix profile container configuration, including VHD location paths, " +
-        "size limits, and redirection settings. Use this to verify profile management " +
-        "setup, check storage paths, or troubleshoot profile loading issues.",
-      annotations: READ_ONLY_ANNOTATIONS,
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const data = await rasClient.get("/api/site-settings/fslogix/profile-container");
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-      } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve FSLogix config") }], isError: true };
       }
     }
   );
@@ -97,7 +79,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/site-settings/load-balancing");
+        const data = await rasClient.get("/api/LBSettings");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve load balancing settings") }], isError: true };
@@ -120,7 +102,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/site-settings/mfa");
+        const data = await rasClient.get("/api/MFA");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve MFA config") }], isError: true };
@@ -142,7 +124,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/site-settings/printing");
+        const data = await rasClient.get("/api/PrintingSettings");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve printing settings") }], isError: true };
@@ -164,7 +146,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/site-settings/tenant-broker/status");
+        const data = await rasClient.get("/api/TenantBroker/Status");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve tenant broker status") }], isError: true };
@@ -186,7 +168,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/site-settings/notifications/events");
+        const data = await rasClient.get("/api/Notifications/Events");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve notification events") }], isError: true };
@@ -208,7 +190,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/site-settings/url-redirection");
+        const data = await rasClient.get("/api/URLRedirectionSettings");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve URL redirection") }], isError: true };
@@ -230,7 +212,7 @@ export function register(server: McpServer): void {
     },
     async () => {
       try {
-        const data = await rasClient.get("/api/site-settings/cpu-optimization");
+        const data = await rasClient.get("/api/CPUOptimizationSettings");
         return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve CPU optimization settings") }], isError: true };

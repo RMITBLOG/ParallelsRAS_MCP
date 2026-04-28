@@ -1,14 +1,20 @@
 # Parallels RAS MCP Server
 
-A lightweight, read-only [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server for querying Parallels Remote Application Server (RAS) infrastructure via the [RAS REST API v20](https://docs.parallels.com/parallels-rest-api-20).
+A community-maintained, read-only [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server for querying Parallels Remote Application Server (RAS) infrastructure via the [RAS REST API](https://docs.parallels.com/landing/ras-rest-api-guide).
 
-Gives AI assistants read-only visibility into your RAS environment — infrastructure, site settings, policies, publishing, sessions, and support — without making any changes.
+Gives AI assistants visibility into your RAS environment — infrastructure, site settings, policies, publishing, and sessions — without making any changes.
+
+> Not affiliated with Parallels International GmbH. "Parallels" is a trademark of its respective owner.
+
+**API compatibility:** verified against the **Parallels RAS v21** REST API. Resources used are stable across v18–v21.
+
+> **Status:** the initial v1.0.0 release was a **draft scaffold**. During review it became clear that the REST API paths had been modelled from the documentation table-of-contents headings rather than the real endpoints. This release corrects all 41 tool paths against the Parallels RAS v21 REST API. See the issue tracker for details.
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 18 or later
 - npm
-- Access to a Parallels RAS server with the REST API enabled (port 20443)
+- Access to a Parallels RAS server with the REST API enabled (port 20443 by default)
 
 ## Installation
 
@@ -40,7 +46,7 @@ Edit your `claude_desktop_config.json` (typically at `%APPDATA%\Claude\claude_de
   "mcpServers": {
     "parallels-ras": {
       "command": "node",
-      "args": ["/path/to/RAS_MCP/build/index.js"],
+      "args": ["/path/to/ParallelsRAS_MCP/build/index.js"],
       "env": {
         "RAS_HOST": "ras-server.example.com",
         "RAS_USERNAME": "administrator",
@@ -55,40 +61,35 @@ Edit your `claude_desktop_config.json` (typically at `%APPDATA%\Claude\claude_de
 
 ### Claude Code
 
-Add the MCP server to your project or global settings:
-
 ```bash
-claude mcp add parallels-ras -- node /path/to/RAS_MCP/build/index.js
+claude mcp add parallels-ras -- node /path/to/ParallelsRAS_MCP/build/index.js
 ```
 
 Set environment variables in your shell or in the Claude Code MCP configuration.
 
 ### Cursor
 
-In Cursor settings, go to **Features > MCP Servers** and add a new server:
+In Cursor settings, go to **Features → MCP Servers** and add:
 
 - **Name:** `parallels-ras`
-- **Command:** `node /path/to/RAS_MCP/build/index.js`
-- **Environment Variables:**
-  - `RAS_HOST` = `ras-server.example.com`
-  - `RAS_USERNAME` = `administrator`
-  - `RAS_PASSWORD` = `your-password`
+- **Command:** `node /path/to/ParallelsRAS_MCP/build/index.js`
+- **Environment:** `RAS_HOST`, `RAS_USERNAME`, `RAS_PASSWORD`
 
-### OpenAI-Compatible Clients
+### Other MCP-compatible clients
 
-For clients supporting the MCP standard via stdio transport, configure the server command as:
+For any client supporting MCP over stdio, point it at:
 
 ```
-node /path/to/RAS_MCP/build/index.js
+node /path/to/ParallelsRAS_MCP/build/index.js
 ```
 
-With the required environment variables (`RAS_HOST`, `RAS_USERNAME`, `RAS_PASSWORD`) set in the client's MCP server configuration.
+with the required environment variables set in the client's MCP server configuration.
 
 ## Available Tools (41 total)
 
 All tools are read-only and annotated with `readOnlyHint: true` for automatic approval in compatible clients.
 
-### Infrastructure (14 tools)
+### Infrastructure (14)
 
 | Tool | Description |
 |------|-------------|
@@ -107,13 +108,12 @@ All tools are read-only and annotated with `readOnlyHint: true` for automatic ap
 | `ras_infra_get_saml_idps` | SAML identity providers for SSO |
 | `ras_infra_get_themes` | User portal themes and branding |
 
-### Site Settings (10 tools)
+### Site Settings (9)
 
 | Tool | Description |
 |------|-------------|
 | `ras_site_get_ad_integration` | Active Directory integration config |
 | `ras_site_get_connection_settings` | Connection and authentication settings |
-| `ras_site_get_fslogix` | FSLogix profile container config |
 | `ras_site_get_load_balancing` | Load balancing settings |
 | `ras_site_get_mfa` | MFA provider configuration |
 | `ras_site_get_printing` | Printing settings |
@@ -122,13 +122,15 @@ All tools are read-only and annotated with `readOnlyHint: true` for automatic ap
 | `ras_site_get_url_redirection` | URL redirection rules |
 | `ras_site_get_cpu_optimization` | CPU optimization settings |
 
-### Policies (1 tool)
+> FSLogix is not exposed at site scope by the REST API — it is configured per host pool / per AVD template, or via PowerShell.
+
+### Policies (1)
 
 | Tool | Description |
 |------|-------------|
 | `ras_policies_list` | List all client policies |
 
-### Farm Settings (7 tools)
+### Farm Settings (7)
 
 | Tool | Description |
 |------|-------------|
@@ -140,42 +142,47 @@ All tools are read-only and annotated with `readOnlyHint: true` for automatic ap
 | `ras_farm_get_mailbox` | SMTP mailbox settings |
 | `ras_farm_get_reporting` | Reporting configuration |
 
-### Publishing (7 tools)
+### Publishing (9)
 
 | Tool | Description |
 |------|-------------|
 | `ras_pub_get_rds_apps` | Published RDS applications |
 | `ras_pub_get_vdi_apps` | Published VDI applications |
 | `ras_pub_get_avd_apps` | Published AVD applications |
-| `ras_pub_get_desktops` | Published desktops |
+| `ras_pub_get_rds_desktops` | Published RDS desktops |
+| `ras_pub_get_vdi_desktops` | Published VDI desktops |
+| `ras_pub_get_avd_desktops` | Published AVD desktops |
 | `ras_pub_get_folders` | Resource folders |
 | `ras_pub_get_status` | Publishing service status |
 | `ras_pub_get_all_items` | All published items (combined view) |
 
-### RD Sessions (1 tool)
+### RD Sessions (1)
 
 | Tool | Description |
 |------|-------------|
 | `ras_sessions_list` | Active remote desktop sessions |
 
-### Help & Support (1 tool)
-
-| Tool | Description |
-|------|-------------|
-| `ras_support_info` | Support information |
-
 ## Extending
 
-To add a new tool module:
+To add a new tool:
 
-1. Create a new file in `src/tools/` (e.g., `notifications.ts`)
-2. Export a `register(server: McpServer): void` function
-3. Use `rasClient.get("/api/...")` to call RAS endpoints
-4. Import and call your `register` function in `src/index.ts`
-5. Rebuild: `npm run build`
+1. Create or open a file in `src/tools/` (e.g., `notifications.ts`).
+2. Export a `register(server: McpServer): void` function.
+3. Call `rasClient.get("/api/<Resource>")` with a path that exists in the official RAS REST API.
+4. Import and call your `register` function in `src/index.ts`.
+5. Run `npm run build`.
 
-See existing tool files for the pattern.
+Module file names (`infrastructure.ts`, `site-settings.ts`, etc.) are an internal grouping for related tools. They do **not** correspond to URL segments — the real RAS API is flat under `/api/<PascalCaseResource>` (e.g. `/api/Agent`, `/api/License`, `/api/MFA`).
+
+### API reference
+
+- Browser reference: <https://docs.parallels.com/landing/ras-rest-api-guide>
+- API base URL: `https://<ras-host>:20443/api/`
+
+## Contributing
+
+Issues and pull requests are welcome. Please open an issue first for anything beyond a small fix so we can agree on the approach.
 
 ## License
 
-MIT
+[MIT](LICENSE)
