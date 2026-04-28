@@ -6,9 +6,16 @@ Gives AI assistants visibility into your RAS environment — infrastructure, sit
 
 > Not affiliated with Parallels International GmbH. "Parallels" is a trademark of its respective owner.
 
-**API compatibility:** verified against the **Parallels RAS v21** REST API. Resources used are stable across v18–v21.
+## Scope and intended use
 
-> **Status:** the initial v1.0.0 release was a **draft scaffold**. During review it became clear that the REST API paths had been modelled from the documentation table-of-contents headings rather than the real endpoints. This release corrects all 41 tool paths against the Parallels RAS v21 REST API. See the issue tracker for details.
+This server uses the MCP **stdio transport**, which means it runs as a local subprocess of the MCP client (Claude Desktop, Claude Code, Cursor, etc.) on the same machine. It is intended for:
+
+- **Local use** by an individual administrator on their own workstation, against a RAS environment they already have credentials for.
+- **Development and test** environments, or read-only inspection of a production farm from a trusted admin workstation.
+
+It is **not** intended to be exposed as a network service or shared between users. Credentials are read from the local environment of the launching process; there is no auth layer, multi-tenancy, or rate limiting. If you need a remote/shared deployment, an HTTP-transport variant would need to be built on top (see *Roadmap* below).
+
+**API compatibility:** verified against the **Parallels RAS v21** REST API. Resources used are stable across v18–v21.
 
 ## Prerequisites
 
@@ -179,9 +186,18 @@ Module file names (`infrastructure.ts`, `site-settings.ts`, etc.) are an interna
 - Browser reference: <https://docs.parallels.com/landing/ras-rest-api-guide>
 - API base URL: `https://<ras-host>:20443/api/`
 
+## Roadmap
+
+- **HTTP / streamable-HTTP transport** — would enable remote or shared deployments (single MCP server, multiple clients, proper auth in front). The stdio model in this repo is deliberately local-only; an HTTP variant is a separate piece of work.
+- **Write operations** — out of scope for this repo. A separate server should host any tool that mutates RAS state, so read-only tools can stay safe to auto-approve.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please open an issue first for anything beyond a small fix so we can agree on the approach.
+
+## History
+
+The initial v1.0.0 release was a draft scaffold whose REST API paths had been modelled from the documentation table-of-contents headings rather than the real endpoints. v1.0.1 corrects all 41 tool paths against the Parallels RAS v21 REST API and adds a build-time path verifier (`scripts/verify-tool-paths.mjs`) against the bundled OpenAPI spec.
 
 ## License
 
