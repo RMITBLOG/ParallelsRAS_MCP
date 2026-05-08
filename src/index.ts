@@ -22,6 +22,7 @@ import { register as registerPolicies } from "./tools/policies.js";
 import { register as registerFarmSettings } from "./tools/farm-settings.js";
 import { register as registerPublishing } from "./tools/publishing.js";
 import { register as registerRdSessions } from "./tools/rd-sessions.js";
+import { register as registerDocumentation } from "./tools/documentation.js";
 
 function buildServer(): McpServer {
   const server = new McpServer({
@@ -34,6 +35,7 @@ function buildServer(): McpServer {
   registerFarmSettings(server);
   registerPublishing(server);
   registerRdSessions(server);
+  registerDocumentation(server);
   return server;
 }
 
