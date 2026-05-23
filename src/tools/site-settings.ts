@@ -1,222 +1,116 @@
 /**
  * Site settings tools for the Parallels RAS MCP Server.
- * Provides read-only access to AD integration, connection settings,
- * load balancing, MFA, printing, notifications, URL redirection, and tenant broker.
+ * Read-only access to AD integration, connection settings, load balancing,
+ * MFA, printing, notifications, URL redirection, and tenant broker.
  *
  * Note: FSLogix has no site-level REST endpoint — it is exposed only at
- * per-host-pool / per-AVD-template scope. PowerShell cmdlets are the canonical
- * site-wide interface. A scoped tool can be added later if required.
+ * per-host-pool / per-AVD-template scope. PowerShell cmdlets are the
+ * canonical site-wide interface. A scoped tool can be added later if required.
  * @author Ryan Mangan
  * @created 2026-02-10
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { rasClient, sanitiseError } from "../client.js";
+import { registerListTool, registerObjectTool, type ToolDef } from "./_format.js";
 
-/** Shared annotations for all read-only site settings tools. */
-const READ_ONLY_ANNOTATIONS = {
-  readOnlyHint: true,
-  destructiveHint: false,
-  idempotentHint: true,
-  openWorldHint: true,
-} as const;
+const LIST_TOOLS: ToolDef[] = [
+  {
+    name: "ras_site_get_notifications",
+    title: "Notification Events",
+    description:
+      "Notification event configuration — alert triggers, email " +
+      "notifications, event thresholds. Use this to review which events " +
+      "trigger admin notifications or verify alerting is configured.",
+    path: "/api/Notifications/Events",
+    errorContext: "Failed to retrieve notification events",
+  },
+  {
+    name: "ras_site_get_url_redirection",
+    title: "URL Redirection",
+    description:
+      "URL redirection rules configured for the site. URL redirection allows " +
+      "specific URLs opened on RDS hosts to be redirected to the client " +
+      "device browser. Use this to review redirection rules or troubleshoot " +
+      "URL handling.",
+    path: "/api/URLRedirectionSettings",
+    errorContext: "Failed to retrieve URL redirection",
+  },
+];
+
+const OBJECT_TOOLS: ToolDef[] = [
+  {
+    name: "ras_site_get_ad_integration",
+    title: "AD Integration",
+    description:
+      "Active Directory integration configuration — domain settings, forest " +
+      "trust relationships, OU mappings. Use this to verify AD connectivity, " +
+      "check domain join status, or troubleshoot authentication issues.",
+    path: "/api/ADIntegrationSettings",
+    errorContext: "Failed to retrieve AD integration",
+  },
+  {
+    name: "ras_site_get_connection_settings",
+    title: "Connection Settings",
+    description:
+      "Connection and authentication settings — session timeouts, client " +
+      "connection policies, authentication methods. Use this to review " +
+      "security posture or troubleshoot client connection issues.",
+    path: "/api/ConnectionSettings",
+    errorContext: "Failed to retrieve connection settings",
+  },
+  {
+    name: "ras_site_get_load_balancing",
+    title: "Load Balancing",
+    description:
+      "Load balancing settings — balancing method, resource weights, session " +
+      "limits. Use this to review how sessions are distributed across RDS " +
+      "hosts or diagnose uneven load distribution.",
+    path: "/api/LBSettings",
+    errorContext: "Failed to retrieve load balancing settings",
+  },
+  {
+    name: "ras_site_get_mfa",
+    title: "MFA Configuration",
+    description:
+      "Multi-factor authentication provider configuration — enabled MFA " +
+      "providers (TOTP, RADIUS, Deepnet, SafeNet, Email OTP), criteria " +
+      "rules, bypass conditions. Use this to audit MFA security posture or " +
+      "troubleshoot MFA login failures.",
+    path: "/api/MFA",
+    errorContext: "Failed to retrieve MFA config",
+  },
+  {
+    name: "ras_site_get_printing",
+    title: "Printing Settings",
+    description:
+      "Printing configuration — printer redirection, universal printing " +
+      "options, driver policies. Use this to troubleshoot print redirection " +
+      "issues or review printing policy configuration.",
+    path: "/api/PrintingSettings",
+    errorContext: "Failed to retrieve printing settings",
+  },
+  {
+    name: "ras_site_get_tenant_broker",
+    title: "Tenant Broker Status",
+    description:
+      "Tenant broker status and join information. The tenant broker enables " +
+      "multi-tenant RAS deployments. Use this to verify tenant broker " +
+      "connectivity or check join status for managed sites.",
+    path: "/api/TenantBroker/Status",
+    errorContext: "Failed to retrieve tenant broker status",
+  },
+  {
+    name: "ras_site_get_cpu_optimization",
+    title: "CPU Optimization",
+    description:
+      "CPU optimization settings for the site. Controls how CPU resources " +
+      "are allocated across user sessions. Use this to review resource " +
+      "management policies or troubleshoot performance issues.",
+    path: "/api/CPUOptimizationSettings",
+    errorContext: "Failed to retrieve CPU optimization settings",
+  },
+];
 
 export function register(server: McpServer): void {
-  // ── AD Integration ──────────────────────────────────────────────────
-  server.registerTool(
-    "ras_site_get_ad_integration",
-    {
-      title: "AD Integration",
-      description:
-        "Get Active Directory integration configuration, including domain settings, " +
-        "forest trust relationships, and OU mappings. Use this to verify AD connectivity, " +
-        "check domain join status, or troubleshoot authentication issues.",
-      annotations: READ_ONLY_ANNOTATIONS,
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const data = await rasClient.get("/api/ADIntegrationSettings");
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-      } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve AD integration") }], isError: true };
-      }
-    }
-  );
-
-  // ── Connection Settings ─────────────────────────────────────────────
-  server.registerTool(
-    "ras_site_get_connection_settings",
-    {
-      title: "Connection Settings",
-      description:
-        "Get connection and authentication settings, including session timeouts, " +
-        "client connection policies, and authentication methods. Use this to review " +
-        "security posture or troubleshoot client connection issues.",
-      annotations: READ_ONLY_ANNOTATIONS,
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const data = await rasClient.get("/api/ConnectionSettings");
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-      } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve connection settings") }], isError: true };
-      }
-    }
-  );
-
-  // ── Load Balancing ──────────────────────────────────────────────────
-  server.registerTool(
-    "ras_site_get_load_balancing",
-    {
-      title: "Load Balancing",
-      description:
-        "Get load balancing settings, including balancing method, resource weights, " +
-        "and session limits. Use this to review how sessions are distributed across " +
-        "RDS hosts or diagnose uneven load distribution.",
-      annotations: READ_ONLY_ANNOTATIONS,
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const data = await rasClient.get("/api/LBSettings");
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-      } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve load balancing settings") }], isError: true };
-      }
-    }
-  );
-
-  // ── MFA ─────────────────────────────────────────────────────────────
-  server.registerTool(
-    "ras_site_get_mfa",
-    {
-      title: "MFA Configuration",
-      description:
-        "Get multi-factor authentication provider configuration, including enabled " +
-        "MFA providers (TOTP, RADIUS, Deepnet, SafeNet, Email OTP), criteria rules, " +
-        "and bypass conditions. Use this to audit MFA security posture or troubleshoot " +
-        "MFA login failures.",
-      annotations: READ_ONLY_ANNOTATIONS,
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const data = await rasClient.get("/api/MFA");
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-      } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve MFA config") }], isError: true };
-      }
-    }
-  );
-
-  // ── Printing ────────────────────────────────────────────────────────
-  server.registerTool(
-    "ras_site_get_printing",
-    {
-      title: "Printing Settings",
-      description:
-        "Get printing configuration settings, including printer redirection, universal " +
-        "printing options, and driver policies. Use this to troubleshoot print redirection " +
-        "issues or review printing policy configuration.",
-      annotations: READ_ONLY_ANNOTATIONS,
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const data = await rasClient.get("/api/PrintingSettings");
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-      } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve printing settings") }], isError: true };
-      }
-    }
-  );
-
-  // ── Tenant Broker ───────────────────────────────────────────────────
-  server.registerTool(
-    "ras_site_get_tenant_broker",
-    {
-      title: "Tenant Broker Status",
-      description:
-        "Get tenant broker status and join information. The tenant broker enables " +
-        "multi-tenant RAS deployments. Use this to verify tenant broker connectivity " +
-        "or check join status for managed sites.",
-      annotations: READ_ONLY_ANNOTATIONS,
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const data = await rasClient.get("/api/TenantBroker/Status");
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-      } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve tenant broker status") }], isError: true };
-      }
-    }
-  );
-
-  // ── Notifications ───────────────────────────────────────────────────
-  server.registerTool(
-    "ras_site_get_notifications",
-    {
-      title: "Notification Events",
-      description:
-        "Get notification event configuration, including alert triggers, email " +
-        "notifications, and event thresholds. Use this to review which events " +
-        "trigger admin notifications or verify alerting is properly configured.",
-      annotations: READ_ONLY_ANNOTATIONS,
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const data = await rasClient.get("/api/Notifications/Events");
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-      } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve notification events") }], isError: true };
-      }
-    }
-  );
-
-  // ── URL Redirection ─────────────────────────────────────────────────
-  server.registerTool(
-    "ras_site_get_url_redirection",
-    {
-      title: "URL Redirection",
-      description:
-        "Get URL redirection rules configured for the site. URL redirection allows " +
-        "specific URLs opened on RDS hosts to be redirected to the client device " +
-        "browser. Use this to review redirection rules or troubleshoot URL handling.",
-      annotations: READ_ONLY_ANNOTATIONS,
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const data = await rasClient.get("/api/URLRedirectionSettings");
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-      } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve URL redirection") }], isError: true };
-      }
-    }
-  );
-
-  // ── CPU Optimization ────────────────────────────────────────────────
-  server.registerTool(
-    "ras_site_get_cpu_optimization",
-    {
-      title: "CPU Optimization",
-      description:
-        "Get CPU optimization settings for the site. Controls how CPU resources " +
-        "are allocated across user sessions. Use this to review resource management " +
-        "policies or troubleshoot performance issues.",
-      annotations: READ_ONLY_ANNOTATIONS,
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const data = await rasClient.get("/api/CPUOptimizationSettings");
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-      } catch (err) {
-        return { content: [{ type: "text" as const, text: sanitiseError(err, "Failed to retrieve CPU optimization settings") }], isError: true };
-      }
-    }
-  );
+  for (const def of LIST_TOOLS) registerListTool(server, def);
+  for (const def of OBJECT_TOOLS) registerObjectTool(server, def);
 }

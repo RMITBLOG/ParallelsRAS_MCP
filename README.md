@@ -146,6 +146,14 @@ claude mcp add parallels-ras --transport http \
 
 All tools are read-only and annotated with `readOnlyHint: true` for automatic approval in compatible clients.
 
+**List tools** (sessions, hosts, certs, agents, published items, etc.) accept three optional inputs for narrowing large responses:
+
+- `fields: string[]` — keep only these top-level keys on each row.
+- `filter: Record<string, string|number|boolean>` — equality match on top-level fields (AND across keys; strings are case-insensitive).
+- `limit: number` — cap rows after filtering. Default 50, hard max 200.
+
+Responses lead with a one-line `NOTE:` header summarising total rows, filter matches, and truncation. A 64 KB byte safety net applies to every response.
+
 ### Infrastructure (14)
 
 | Tool | Description |
@@ -221,13 +229,26 @@ All tools are read-only and annotated with `readOnlyHint: true` for automatic ap
 
 ## Extending
 
+Most tools follow one of two shapes: a **list tool** (the API returns an array of rows) or a **single-object tool** (config/status blob). Both are registered through factories in `src/tools/_format.ts`, so adding a new tool is a small `ToolDef` record plus one factory call.
+
 To add a new tool:
 
-1. Create or open a file in `src/tools/` (e.g., `notifications.ts`).
-2. Export a `register(server: McpServer): void` function.
-3. Call `rasClient.get("/api/<Resource>")` with a path that exists in the official RAS REST API.
-4. Import and call your `register` function in `src/index.ts`.
-5. Run `npm run build`.
+1. Open the appropriate file in `src/tools/` (e.g., `infrastructure.ts` for a new infra resource), or create a new one.
+2. Add a `ToolDef` record to the file's `LIST_TOOLS` or `OBJECT_TOOLS` array:
+
+   ```ts
+   {
+     name: "ras_infra_get_widgets",
+     title: "Widgets",
+     description: "List widgets in the farm. Supports `fields`, `filter`, `limit`.",
+     path: "/api/Widget",
+     errorContext: "Failed to retrieve widgets",
+   }
+   ```
+3. If you created a new file, export a `register(server)` function that loops over your `ToolDef` arrays calling `registerListTool` and/or `registerObjectTool`, then import and call it from `src/index.ts`.
+4. Run `npm run build`. The build runs `scripts/verify-tool-paths.mjs`, which fails the build if the `path:` you declared isn't a real GET in the v21 OpenAPI spec.
+
+`registerListTool` automatically wires the `fields` / `filter` / `limit` schema and routes the response through `formatList`. `registerObjectTool` skips the schema but still applies the 64 KB byte safety net.
 
 Module file names (`infrastructure.ts`, `site-settings.ts`, etc.) are an internal grouping for related tools. They do **not** correspond to URL segments — the real RAS API is flat under `/api/<PascalCaseResource>` (e.g. `/api/Agent`, `/api/License`, `/api/MFA`).
 
@@ -247,9 +268,11 @@ Issues and pull requests are welcome. Please open an issue first for anything be
 
 ## History
 
-- **v1.1.0** — adds an opt-in streamable-HTTP transport with bearer-token auth, alongside the existing stdio transport.
-- **v1.0.1** — corrects all 41 tool paths against the Parallels RAS v21 REST API and adds a build-time path verifier (`scripts/verify-tool-paths.mjs`) against the bundled OpenAPI spec.
-- **v1.0.0** — draft scaffold; REST API paths had been modelled from the documentation table-of-contents headings rather than the real endpoints. Superseded by v1.0.1.
+See [CHANGELOG.md](CHANGELOG.md) for the full release log. Recent highlights:
+
+- **v1.2.0** — efficiency pass across all 41 tools: `fields` / `filter` / `limit` inputs on every list tool, default row cap of 50, 64 KB byte safety net on every response, shared registration factories. Backward-compatible at the MCP protocol level.
+- **v1.1.0** — opt-in streamable-HTTP transport with bearer-token auth, alongside the existing stdio transport.
+- **v1.0.1** — corrects all 41 tool paths against the Parallels RAS v21 REST API and adds a build-time path verifier.
 
 ## License
 

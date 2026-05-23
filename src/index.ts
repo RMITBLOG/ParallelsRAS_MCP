@@ -27,7 +27,7 @@ import { register as registerDocumentation } from "./tools/documentation.js";
 function buildServer(): McpServer {
   const server = new McpServer({
     name: "parallels-ras",
-    version: "1.0.0",
+    version: "1.2.0",
   });
   registerInfrastructure(server);
   registerSiteSettings(server);
