@@ -1,6 +1,6 @@
 /**
  * Parallels RAS MCP Server — Entry Point
- * A read-only MCP server for querying Parallels RAS infrastructure via the REST API.
+ * RAS REST API queries with optional, configuration-gated write support.
  *
  * Transport selection via MCP_TRANSPORT env var:
  *   - "stdio" (default): launched as a subprocess by the MCP client (Claude
@@ -23,11 +23,12 @@ import { register as registerFarmSettings } from "./tools/farm-settings.js";
 import { register as registerPublishing } from "./tools/publishing.js";
 import { register as registerRdSessions } from "./tools/rd-sessions.js";
 import { register as registerDocumentation } from "./tools/documentation.js";
+import { registerWriteTools } from "./tools/write-tools.js";
 
 function buildServer(): McpServer {
   const server = new McpServer({
     name: "parallels-ras",
-    version: "1.2.0",
+    version: "1.3.0",
   });
   registerInfrastructure(server);
   registerSiteSettings(server);
@@ -36,6 +37,7 @@ function buildServer(): McpServer {
   registerPublishing(server);
   registerRdSessions(server);
   registerDocumentation(server);
+  registerWriteTools(server);
   return server;
 }
 

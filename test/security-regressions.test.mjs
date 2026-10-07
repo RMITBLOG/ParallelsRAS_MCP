@@ -210,6 +210,7 @@ async function startHttpServer() {
       RAS_USERNAME: "administrator",
       RAS_PASSWORD: "synthetic-password",
       RAS_IGNORE_TLS: "false",
+      RAS_ENABLE_WRITE: "false",
       MCP_TRANSPORT: "http",
       MCP_HTTP_HOST: "127.0.0.1",
       MCP_HTTP_PORT: String(port),

@@ -5,6 +5,14 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Add opt-in RAS write support to the MCP server and standalone skill with
+  `RAS_ENABLE_WRITE=true`. A v21.2 method/path catalog constrains the generic
+  write request tool; JSON, multipart file, and raw bodies are supported.
+- Keep write requests single-attempt and bound request bodies. HTTP write mode
+  uses a 12 MiB request limit and four concurrent authenticated requests.
+
 ## [1.3.0] - 2026-10-07
 
 ### Added

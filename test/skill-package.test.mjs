@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -41,6 +41,7 @@ test("ZIP imports and runs without a source checkout or node_modules", async (t)
     RAS_USERNAME: "administrator",
     RAS_PASSWORD: "synthetic-password",
     RAS_IGNORE_TLS: "false",
+    RAS_ENABLE_WRITE: "false",
   };
 
   const list = await run(process.execPath, [script, "list"], { cwd: extracted, env });
@@ -51,4 +52,17 @@ test("ZIP imports and runs without a source checkout or node_modules", async (t)
   ], { cwd: extracted, env });
   assert.match(call.stdout, /host-1/);
   assert.doesNotMatch(call.stdout, /host-2|do-not-output|synthetic-password/);
+
+  const writeEnv = { ...env, RAS_ENABLE_WRITE: "true" };
+  const writeList = await run(process.execPath, [script, "list"], { cwd: extracted, env: writeEnv });
+  assert.equal(JSON.parse(writeList.stdout).tools.length, 43);
+  const write = execFileSync(process.execPath, [
+    "--require", fakeApiCopy, script, "call", "ras_write_request", "-",
+  ], {
+    cwd: extracted,
+    env: writeEnv,
+    encoding: "utf8",
+    input: JSON.stringify({ method: "POST", path: "/api/Settings/apply" }),
+  });
+  assert.match(write, /"status": 204/);
 });

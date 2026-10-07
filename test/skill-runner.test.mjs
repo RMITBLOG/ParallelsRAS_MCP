@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import test from "node:test";
@@ -13,6 +13,7 @@ const env = {
   RAS_USERNAME: "administrator",
   RAS_PASSWORD: "synthetic-password",
   RAS_IGNORE_TLS: "false",
+  RAS_ENABLE_WRITE: "false",
 };
 
 test("skill runner discovers the shared read-only RAS catalog", async () => {
@@ -22,6 +23,24 @@ test("skill runner discovers the shared read-only RAS catalog", async () => {
   assert.ok(result.tools.some((tool) => tool.name === "ras_farm_get_version"));
   assert.ok(result.tools.some((tool) => tool.name === "ras_sessions_list"));
   assert.equal(stdout.includes("synthetic-password"), false);
+});
+
+test("skill runner exposes opt-in writes and accepts mutation JSON only on stdin", () => {
+  const writeEnv = { ...env, RAS_ENABLE_WRITE: "true" };
+  const list = JSON.parse(execFileSync(process.execPath, [fileURLToPath(script), "list"], { env: writeEnv, encoding: "utf8" }));
+  assert.equal(list.tools.length, 43);
+  assert.ok(list.tools.some((tool) => tool.name === "ras_write_request"));
+
+  const output = execFileSync(process.execPath, [
+    "--require", fileURLToPath(fakeApi), fileURLToPath(script),
+    "call", "ras_write_request", "-",
+  ], {
+    env: writeEnv,
+    encoding: "utf8",
+    input: JSON.stringify({ method: "POST", path: "/api/Settings/apply" }),
+  });
+  assert.match(output, /"status": 204/);
+  assert.doesNotMatch(output, /synthetic-password|synthetic-token/);
 });
 
 test("skill runner calls the RAS client directly and narrows its output", async () => {

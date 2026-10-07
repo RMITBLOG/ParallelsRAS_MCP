@@ -1,6 +1,6 @@
 /**
  * Shared RAS REST API client for the Parallels RAS MCP Server.
- * Handles authentication, session management, headers, and GET requests.
+ * Handles authentication, session management, headers, and RAS requests.
  * Includes request timeouts, error sanitisation, and graceful shutdown.
  *
  * API surface verified against the v19 OpenAPI spec at
@@ -14,6 +14,7 @@
  */
 
 import { readResponseText } from "./http-body.js";
+import type { WriteMethod } from "./write-operations.js";
 
 const RAS_HOST = process.env.RAS_HOST ?? "";
 const RAS_USERNAME = process.env.RAS_USERNAME ?? "";
@@ -222,6 +223,43 @@ class RasClient {
 
     const body = await readResponseText(response, MAX_RAS_RESPONSE_BYTES);
     return JSON.parse(body) as unknown;
+  }
+
+  /** Send one write request. Never replay a mutation after an uncertain result. */
+  async write(
+    method: WriteMethod,
+    pathAndQuery: string,
+    body?: BodyInit,
+    contentType?: string,
+  ): Promise<{ status: number; data?: unknown }> {
+    await this.ensureAuthenticated();
+    const headers: Record<string, string> = {
+      auth_token: this.authToken!,
+    };
+    if (contentType) headers["Content-Type"] = contentType;
+
+    const response = await fetch(`${this.baseUrl}${pathAndQuery}`, {
+      method,
+      headers,
+      body,
+      redirect: "error",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw new Error(`RAS write failed (HTTP ${response.status})`);
+    }
+    const responseText = await readResponseText(response, MAX_RAS_RESPONSE_BYTES);
+    if (!responseText) return { status: response.status };
+    const responseType = response.headers.get("content-type") ?? "";
+    if (responseType.toLowerCase().includes("json")) {
+      try {
+        return { status: response.status, data: JSON.parse(responseText) as unknown };
+      } catch {
+        throw new Error("RAS write returned invalid JSON");
+      }
+    }
+    return { status: response.status, data: responseText };
   }
 }
 

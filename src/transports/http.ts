@@ -3,8 +3,7 @@
  *
  * Wraps the SDK's StreamableHTTPServerTransport in a small Node http
  * listener with a bearer-token auth check. Stateless mode (no session
- * IDs) — fine for a read-only query surface where every POST stands
- * alone.
+ * IDs), so every POST has its own MCP context.
  *
  * Security posture: this server holds RAS admin credentials, so the
  * bearer token is required and the listener defaults to 127.0.0.1.
@@ -18,9 +17,10 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 3000;
 const MCP_PATH = "/mcp";
-const MAX_BODY_BYTES = 1024 * 1024;
+const WRITE_ENABLED = (process.env.RAS_ENABLE_WRITE ?? "false").toLowerCase() === "true";
+const MAX_BODY_BYTES = WRITE_ENABLED ? 12 * 1024 * 1024 : 1024 * 1024;
 const MAX_BATCH_ITEMS = 25;
-const MAX_CONCURRENT_REQUESTS = 16;
+const MAX_CONCURRENT_REQUESTS = WRITE_ENABLED ? 4 : 16;
 let activeRequests = 0;
 
 type ServerFactory = () => McpServer;
