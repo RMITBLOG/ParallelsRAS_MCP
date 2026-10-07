@@ -1,6 +1,7 @@
 /** Standalone RAS skill CLI. Bundled into an importable skill. */
 import { rasClient, sanitiseError } from "./client.js";
 import { callDocsTool, isAllowedDocsUrl } from "./docs-client.js";
+import { truncateUtf8 } from "./http-body.js";
 import { formatList, parseListOptions, type ListShapeOptions } from "./tools/_format.js";
 import { RAS_TOOLS } from "./tools/catalog.js";
 import { executeWrite, isWriteEnabled, listWriteOperations } from "./write.js";
@@ -79,7 +80,14 @@ async function main(): Promise<void> {
         toolName === "ras_docs_search" ? "searchDocumentation" : "getPage",
         { [key]: value },
       );
-      console.log(formatList(content));
+      const output = content.map((item) => item.text).join("\n\n");
+      const maxBytes = 64 * 1024;
+      const suffix = "\n\n[Documentation output truncated at 65536 bytes.]";
+      if (Buffer.byteLength(output, "utf8") > maxBytes) {
+        process.stdout.write(truncateUtf8(output, maxBytes - Buffer.byteLength(suffix, "utf8")) + suffix);
+      } else {
+        process.stdout.write(output);
+      }
     } catch (error) {
       fail(sanitiseError(error, toolName === "ras_docs_search" ?
         "Failed to search Parallels documentation" : "Failed to fetch Parallels documentation page"));

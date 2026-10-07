@@ -4,7 +4,8 @@ globalThis.fetch = async (url, options = {}) => {
     const request = JSON.parse(options.body);
     const name = request.params.name;
     const text = name === "searchDocumentation" ? "Synthetic documentation search result" :
-      name === "getPage" ? "Synthetic documentation page" : null;
+      name === "getPage" ? (request.params.arguments.url.endsWith("/long") ?
+        "Synthetic documentation page " + "x".repeat(50_000) : "Synthetic documentation page") : null;
     if (text === null) throw new Error("Unexpected documentation tool");
     return new Response(`data: ${JSON.stringify({ jsonrpc: "2.0", id: request.id,
       result: { content: [{ type: "text", text }] } })}\n\n`, {

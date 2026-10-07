@@ -53,6 +53,13 @@ test("ZIP imports and runs without a source checkout or node_modules", async (t)
   assert.match(call.stdout, /host-1/);
   assert.doesNotMatch(call.stdout, /host-2|do-not-output|synthetic-password/);
 
+  const docs = await run(process.execPath, [
+    "--require", fakeApiCopy, script, "call", "ras_docs_get_page",
+    JSON.stringify({ url: "https://docs.parallels.com/landing/long" }),
+  ], { cwd: extracted, env });
+  assert.ok(docs.stdout.length > 50_000);
+  assert.ok(Buffer.byteLength(docs.stdout, "utf8") <= 64 * 1024);
+
   const writeEnv = { ...env, RAS_ENABLE_WRITE: "true" };
   const writeList = await run(process.execPath, [script, "list"], { cwd: extracted, env: writeEnv });
   assert.equal(JSON.parse(writeList.stdout).tools.length, 45);

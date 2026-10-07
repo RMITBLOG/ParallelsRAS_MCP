@@ -57,6 +57,12 @@ test("skill runner searches and fetches documentation with URL validation", () =
     { env, encoding: "utf8" });
   assert.match(page, /Synthetic documentation page/);
 
+  const longPage = execFileSync(process.execPath,
+    [...args, "ras_docs_get_page", JSON.stringify({ url: "https://docs.parallels.com/landing/long" })],
+    { env, encoding: "utf8" });
+  assert.ok(longPage.length > 50_000);
+  assert.ok(Buffer.byteLength(longPage, "utf8") <= 64 * 1024);
+
   assert.throws(() => execFileSync(process.execPath,
     [...args, "ras_docs_get_page", JSON.stringify({ url: "https://docs.parallels.com.attacker.invalid/" })],
     { env, encoding: "utf8", stdio: "pipe" }), /Expected an HTTPS docs.parallels.com URL/);
