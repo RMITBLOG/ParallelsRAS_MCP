@@ -2,7 +2,8 @@
  * RAS v21.2 documented write operations, generated from the official guide.
  * Source: https://download.parallels.com/ras/v21/en_US/Parallels-RAS-REST-API-Guide-21.pdf
  * Source SHA-256: 898d5e50605ee134ef9343467cf2f74faf2b6a762a8c78e7aa4f09c201ef204a
- * PDF line-wrap fragments that end mid-segment are excluded.
+ * PDF line-wrap fragments that end mid-segment are excluded. Documented short
+ * paths are retained even when a longer operation shares their prefix.
  * Session logon and own-session logoff are handled internally by RasClient.
  */
 export type WriteMethod = "POST" | "PUT" | "DELETE";
@@ -255,6 +256,7 @@ export const WRITE_OPERATIONS: ReadonlyArray<readonly [WriteMethod, string]> = [
   ["DELETE", "/api/VDIDefaultSettings/Optimization/WindowsService"],
   ["DELETE", "/api/WinDeviceGroup/{id}"],
   ["DELETE", "/api/WinDeviceGroup/{id}/InboundPort"],
+  ["POST", "/api/ADIntegrationSettings/Validate"],
   ["POST", "/api/ADIntegrationSettings/ValidateAWS"],
   ["POST", "/api/AVD/DefaultSettings/MultiSession/AppPackageAssigned"],
   ["POST", "/api/AVD/DefaultSettings/MultiSession/AutoUpgrade/Messages"],
@@ -417,7 +419,9 @@ export const WRITE_OPERATIONS: ReadonlyArray<readonly [WriteMethod, string]> = [
   ["POST", "/api/Provider/awsec2"],
   ["POST", "/api/Provider/azure"],
   ["POST", "/api/Provider/custom"],
+  ["POST", "/api/Provider/hyperv"],
   ["POST", "/api/Provider/hypervfailover"],
+  ["POST", "/api/Provider/nutanix"],
   ["POST", "/api/Provider/nutanixpc"],
   ["POST", "/api/Provider/remotepcdynamic"],
   ["POST", "/api/Provider/remotepcstatic"],
@@ -461,6 +465,7 @@ export const WRITE_OPERATIONS: ReadonlyArray<readonly [WriteMethod, string]> = [
   ["POST", "/api/PubItems/{id}/Rules/{ruleId}/Criteria/Themes"],
   ["POST", "/api/PubItems/{id}/move"],
   ["POST", "/api/RDS/Host/AppPackageAssigned/RetryStaging"],
+  ["POST", "/api/RDS/Host"],
   ["POST", "/api/RDS/Host/Schedule/Disable"],
   ["POST", "/api/RDS/Host/Schedule/Reboot"],
   ["POST", "/api/RDS/Host/Schedule/Shutdown"],
@@ -471,6 +476,7 @@ export const WRITE_OPERATIONS: ReadonlyArray<readonly [WriteMethod, string]> = [
   ["POST", "/api/RDS/Host/{id}/CancelDisabledState"],
   ["POST", "/api/RDS/Host/{id}/CancelPendingReboot"],
   ["POST", "/api/RDS/Host/{id}/DisableLogonsAndReconnections"],
+  ["POST", "/api/RDS/Host/{id}/Drain"],
   ["POST", "/api/RDS/Host/{id}/DrainUntilReboot"],
   ["POST", "/api/RDS/Host/{id}/EnableLogons"],
   ["POST", "/api/RDS/Host/{id}/FSLogix/OfficeContainer/CCDLocations"],
@@ -552,6 +558,7 @@ export const WRITE_OPERATIONS: ReadonlyArray<readonly [WriteMethod, string]> = [
   ["POST", "/api/Site/{id}/promote"],
   ["POST", "/api/Support/SendSupportRequest"],
   ["POST", "/api/Support/SendSystemReport"],
+  ["POST", "/api/Tenant"],
   ["POST", "/api/Tenant/{id}/GenerateHash"],
   ["POST", "/api/Tenant/{id}/SendInvitation"],
   ["POST", "/api/TenantBroker/Join"],

@@ -14,17 +14,24 @@ const { WRITE_OPERATIONS } = await import("../build/write-operations.js");
 const { rasClient } = await import("../build/client.js");
 
 test("writes are disabled by default and documented operations are discoverable only after opt-in", async () => {
-  assert.equal(WRITE_OPERATIONS.length, 808);
+  assert.equal(WRITE_OPERATIONS.length, 814);
   assert.ok(WRITE_OPERATIONS.some(([method, path]) => method === "DELETE" &&
     path === "/api/AVD/DefaultSettings/MultiSession/FSLogix/OfficeContainer/CCDLocations"));
   for (const [method, path] of WRITE_OPERATIONS) {
     assert.equal(path.startsWith("/api/"), true);
     assert.equal(path.split("{").length, path.split("}").length);
-    assert.equal(WRITE_OPERATIONS.some(([otherMethod, otherPath]) =>
-      otherMethod === method && otherPath.startsWith(path) &&
-      otherPath.length > path.length && otherPath[path.length] !== "/"), false,
-      `Truncated catalog entry: ${method} ${path}`);
   }
+  for (const path of [
+    "/api/ADIntegrationSettings/Validate",
+    "/api/Provider/hyperv",
+    "/api/Provider/nutanix",
+    "/api/RDS/Host",
+    "/api/RDS/Host/{id}/Drain",
+    "/api/Tenant",
+  ]) {
+    assert.ok(WRITE_OPERATIONS.some(([method, candidate]) => method === "POST" && candidate === path));
+  }
+  assert.ok(!WRITE_OPERATIONS.some(([, path]) => path.endsWith("/CCDLocat")));
   assert.throws(() => listWriteOperations(), /disabled/);
   await assert.rejects(executeWrite({ method: "POST", path: "/api/Settings/apply" }), /disabled/);
   process.env.RAS_ENABLE_WRITE = "true";
