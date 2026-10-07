@@ -6,6 +6,7 @@ import test from "node:test";
 
 const run = promisify(execFile);
 const script = new URL("../.agents/skills/parallels-ras/scripts/ras-query.mjs", import.meta.url);
+const fakeApi = new URL("../fixtures/fake-ras-fetch.cjs", import.meta.url);
 const env = {
   ...process.env,
   RAS_HOST: "ras.test",
@@ -24,26 +25,8 @@ test("skill runner discovers the shared read-only RAS catalog", async () => {
 });
 
 test("skill runner calls the RAS client directly and narrows its output", async () => {
-  const fakeApi = `globalThis.fetch = async (url, options = {}) => {
-    const path = new URL(url).pathname;
-    if (path === "/api/Session/logon" && options.method === "POST") {
-      return new Response(JSON.stringify({authToken: "synthetic-token"}), {status: 200});
-    }
-    if (path === "/api/Agent" && options.method === "GET" &&
-        options.headers?.auth_token === "synthetic-token") {
-      return new Response(JSON.stringify([
-        {hostname: "host-1", privateField: "do-not-output"},
-        {hostname: "host-2", privateField: "do-not-output"}
-      ]), {status: 200});
-    }
-    if (path === "/api/Session/logoff" && options.method === "POST") {
-      return new Response(null, {status: 204});
-    }
-    throw new Error("Unexpected outbound request");
-  };`;
-  const preload = `data:text/javascript,${encodeURIComponent(fakeApi)}`;
   const { stdout } = await run(process.execPath, [
-    "--import", preload,
+    "--require", fileURLToPath(fakeApi),
     fileURLToPath(script), "call", "ras_infra_get_agents",
     JSON.stringify({ fields: ["hostname"], limit: 1 }),
   ], { env });
