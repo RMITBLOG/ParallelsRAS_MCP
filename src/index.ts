@@ -43,10 +43,9 @@ async function main() {
   validateConfig();
 
   const transport = (process.env.MCP_TRANSPORT ?? "stdio").toLowerCase();
-  const server = buildServer();
 
   if (transport === "http") {
-    await startHttpTransport(server);
+    await startHttpTransport(buildServer);
     return;
   }
 
@@ -56,6 +55,7 @@ async function main() {
     );
   }
 
+  const server = buildServer();
   await server.connect(new StdioServerTransport());
   console.error("Parallels RAS MCP Server running on stdio");
 }

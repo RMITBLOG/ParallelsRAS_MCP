@@ -13,13 +13,13 @@ Two transports are supported, selected via the `MCP_TRANSPORT` environment varia
 - **`stdio`** (default) — launched as a local subprocess by the MCP client (Claude Desktop, Claude Code, Cursor, etc.). Intended for an individual administrator on their own workstation, or for development and test environments. Credentials come from the launching process's environment; there is no network listener.
 - **`http`** — streamable-HTTP listener with a required bearer token. Intended for trusted-network deployments where one server is shared by multiple clients (e.g. behind a reverse proxy that adds TLS). Defaults to binding `127.0.0.1:3000`; binding to all interfaces is opt-in.
 
-In either mode this server holds a RAS administrator session and exposes 41 read-only tools. It does not expose write or destructive tools and does not provide multi-tenancy or rate limiting — treat it as an admin-equivalent service and protect access accordingly.
+In either mode this server holds a RAS administrator session and exposes 41 read-only tools. It does not expose write or destructive tools or provide multi-tenancy. HTTP mode bounds individual requests, batches, and concurrent work, but does not provide per-client rate limiting — treat it as an admin-equivalent service and protect access accordingly.
 
 **API compatibility:** verified against the **Parallels RAS v21** REST API. Resources used are stable across v18–v21.
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 18 or later
+- [Node.js](https://nodejs.org/) 18.14.1 or later
 - npm
 - Access to a Parallels RAS server with the REST API enabled (port 20443 by default)
 
@@ -42,7 +42,8 @@ npm run build
 | `RAS_USERNAME` | Yes | — | Administrator username |
 | `RAS_PASSWORD` | Yes | — | Administrator password |
 | `RAS_PORT` | No | `20443` | REST API port |
-| `RAS_IGNORE_TLS` | No | `true` | Skip TLS certificate verification (for self-signed certs) |
+| `RAS_IGNORE_TLS` | No | `true` | Skip TLS certificate verification for self-signed RAS deployments. See the security tradeoff below. |
+| `NODE_EXTRA_CA_CERTS` | No | — | PEM bundle containing the private CA that issued the RAS certificate. Set this when using `RAS_IGNORE_TLS=false`. |
 
 ### Transport
 
@@ -52,6 +53,36 @@ npm run build
 | `MCP_HTTP_BEARER_TOKEN` | HTTP only | — | Bearer token clients must present in `Authorization: Bearer …`. Server refuses to start without it. Generate with `openssl rand -hex 32`. |
 | `MCP_HTTP_HOST` | No | `127.0.0.1` | Bind address. Set to `0.0.0.0` to expose on all interfaces (front with TLS termination). |
 | `MCP_HTTP_PORT` | No | `3000` | Listen port. |
+
+### Self-signed RAS certificates
+
+`RAS_IGNORE_TLS=true` remains the default for compatibility with RAS deployments
+that use a self-signed certificate. This is an explicit security tradeoff: Node's
+`NODE_TLS_REJECT_UNAUTHORIZED=0` setting is process-wide, so it disables certificate
+verification for both the RAS API connection and the Parallels documentation HTTPS
+connection. An attacker able to intercept internal network traffic could impersonate
+either service and obtain RAS administrator credentials or session tokens. The server
+prints a warning whenever this mode is active.
+
+This setting concerns verification of the remote HTTPS server certificate. It is
+unrelated to signing a locally built copy of this MCP server.
+
+For a secure self-signed or private-CA deployment, export the issuing CA certificate
+as PEM, ensure the certificate's Subject Alternative Name matches `RAS_HOST`, and
+start Node with verification enabled:
+
+```json
+{
+  "env": {
+    "RAS_HOST": "ras-server.example.com",
+    "RAS_IGNORE_TLS": "false",
+    "NODE_EXTRA_CA_CERTS": "C:\\certificates\\ras-ca.pem"
+  }
+}
+```
+
+`NODE_EXTRA_CA_CERTS` is read when Node starts. Do not place the RAS private key in
+this file; it should contain only the public CA certificate chain.
 
 ## Configuration
 
@@ -124,6 +155,11 @@ npm run start:http
 ```
 
 The server logs the listen address on startup. The MCP endpoint is `POST /mcp`. Requests must include `Authorization: Bearer <MCP_HTTP_BEARER_TOKEN>`; missing or wrong tokens return `401`.
+
+HTTP mode accepts request bodies up to 1 MiB, JSON-RPC batches of up to 25 items,
+and 16 concurrent authenticated requests. Requests beyond these bounds receive
+`413` or `503` responses. Each stateless request receives a fresh MCP server and
+transport context.
 
 ### Connect a client
 

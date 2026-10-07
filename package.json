@@ -6,20 +6,24 @@
   "main": "build/index.js",
   "scripts": {
     "build": "tsc",
+    "test": "npm run build && node --test",
     "start": "node build/index.js",
     "start:http": "MCP_TRANSPORT=http node build/index.js"
   },
   "author": "Ryan Mangan",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "typescript": "^5.7.0"
   },
+  "overrides": {
+    "@hono/node-server": "1.19.17"
+  },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.14.1"
   }
 }

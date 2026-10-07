@@ -8,13 +8,49 @@
  * @created 2026-05-08
  */
 
+import { readResponseText, truncateUtf8 } from "./http-body.js";
+
 const DOCS_MCP_URL = "https://docs.parallels.com/landing/~gitbook/mcp";
 const DOCS_TIMEOUT_MS = 30_000;
+const DOCS_RESPONSE_LIMIT_BYTES = 1024 * 1024;
+const DOCS_OUTPUT_LIMIT_BYTES = 64 * 1024;
 
 /** Single text/markdown chunk returned by the upstream documentation tools. */
 export type DocsContent = { type: "text"; text: string };
 
 let nextId = 1;
+
+/** Apply one encoded-byte ceiling across all returned documentation chunks. */
+function capDocsContent(content: DocsContent[]): DocsContent[] {
+  const suffix = "\n\n[Documentation output truncated at 65536 bytes.]";
+  const suffixBytes = Buffer.byteLength(suffix, "utf8");
+  const result: DocsContent[] = [];
+  let remaining = DOCS_OUTPUT_LIMIT_BYTES;
+
+  for (const item of content) {
+    if (remaining === 0) break;
+    if (item.type !== "text" || typeof item.text !== "string") continue;
+    const itemBytes = Buffer.byteLength(item.text, "utf8");
+    if (itemBytes <= remaining) {
+      result.push(item);
+      remaining -= itemBytes;
+      continue;
+    }
+
+    const available = Math.max(0, remaining - suffixBytes);
+    const truncated = truncateUtf8(item.text, available);
+    result.push({
+      type: "text",
+      text:
+        truncated +
+        truncateUtf8(suffix, Math.max(0, remaining - Buffer.byteLength(truncated, "utf8"))),
+    });
+    remaining = 0;
+    break;
+  }
+
+  return result;
+}
 
 /**
  * Parse an SSE-framed JSON-RPC response body and return the `result` field
@@ -64,17 +100,16 @@ export async function callDocsTool(
       method: "tools/call",
       params: { name, arguments: args },
     }),
+    redirect: "error",
     signal: AbortSignal.timeout(DOCS_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    const body = await response.text();
-    throw new Error(
-      `docs MCP HTTP ${response.status}: ${body.substring(0, 300)}`
-    );
+    await response.body?.cancel();
+    throw new Error(`docs MCP HTTP ${response.status}`);
   }
 
-  const body = await response.text();
+  const body = await readResponseText(response, DOCS_RESPONSE_LIMIT_BYTES);
   const result = parseSseJsonRpc(body, id) as
     | { content?: DocsContent[]; isError?: boolean }
     | undefined;
@@ -83,8 +118,7 @@ export async function callDocsTool(
     throw new Error("docs MCP returned no content");
   }
   if (result.isError) {
-    const msg = result.content.map((c) => c.text).join(" ").substring(0, 300);
-    throw new Error(`docs MCP tool error: ${msg}`);
+    throw new Error("docs MCP tool returned an error");
   }
-  return result.content;
+  return capDocsContent(result.content);
 }

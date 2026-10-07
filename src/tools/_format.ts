@@ -20,6 +20,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rasClient, sanitiseError } from "../client.js";
+import { truncateUtf8 } from "../http-body.js";
 
 // ── Tool annotations ────────────────────────────────────────────────────
 
@@ -103,12 +104,62 @@ function project(row: unknown, fields: string[]): unknown {
   return out;
 }
 
-function capBytes(body: string, hints: string[]): string {
-  if (body.length <= BYTE_SAFETY_CAP) return body;
+function shrinkJsonValue(
+  value: unknown,
+  stringBytes: number,
+  collectionItems: number,
+  depth = 0,
+): unknown {
+  if (typeof value === "string") return truncateUtf8(value, stringBytes);
+  if (value === null || typeof value !== "object") return value;
+  if (depth >= 12) return "[nested content truncated]";
+  if (Array.isArray(value)) {
+    return value
+      .slice(0, collectionItems)
+      .map((item) => shrinkJsonValue(item, stringBytes, collectionItems, depth + 1));
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value).slice(0, collectionItems)) {
+    result[key] = shrinkJsonValue(item, stringBytes, collectionItems, depth + 1);
+  }
+  return result;
+}
+
+function serialiseJsonWithinBytes(value: unknown, maxBytes: number): string {
+  const original = JSON.stringify(value, null, 2) ?? "null";
+  if (Buffer.byteLength(original, "utf8") <= maxBytes) return original;
+
+  let stringBytes = Math.min(4096, maxBytes);
+  let collectionItems = 64;
+  while (stringBytes > 0 || collectionItems > 0) {
+    const reduced = shrinkJsonValue(value, stringBytes, collectionItems);
+    const body = JSON.stringify(reduced, null, 2) ?? "null";
+    if (Buffer.byteLength(body, "utf8") <= maxBytes) return body;
+    if (collectionItems > 1) collectionItems = Math.floor(collectionItems / 2);
+    else if (stringBytes > 16) stringBytes = Math.floor(stringBytes / 2);
+    else if (collectionItems === 1) collectionItems = 0;
+    else stringBytes = 0;
+  }
+
+  if (Array.isArray(value)) return "[]";
+  if (value !== null && typeof value === "object") return "{}";
+  return "null";
+}
+
+function formatCapped(value: unknown, hints: string[]): string {
+  const prefix = () => (hints.length === 0 ? "" : `NOTE: ${hints.join("; ")}.\n\n`);
+  const body = JSON.stringify(value, null, 2) ?? "null";
+  if (Buffer.byteLength(prefix() + body, "utf8") <= BYTE_SAFETY_CAP) {
+    return prefix() + body;
+  }
+
   hints.push(
     `output truncated at ${BYTE_SAFETY_CAP} bytes; use 'fields' to project a smaller subset`,
   );
-  return body.substring(0, BYTE_SAFETY_CAP);
+  const header = prefix();
+  const remaining = BYTE_SAFETY_CAP - Buffer.byteLength(header, "utf8");
+  return truncateUtf8(header, BYTE_SAFETY_CAP) + serialiseJsonWithinBytes(value, Math.max(0, remaining));
 }
 
 /**
@@ -119,8 +170,7 @@ function capBytes(body: string, hints: string[]): string {
 export function formatList(data: unknown, opts: ListShapeOptions = {}): string {
   if (!Array.isArray(data)) {
     const hints: string[] = [];
-    const body = capBytes(JSON.stringify(data, null, 2), hints);
-    return hints.length === 0 ? body : `NOTE: ${hints.join("; ")}.\n\n${body}`;
+    return formatCapped(data, hints);
   }
 
   const limit = Math.min(opts.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
@@ -146,8 +196,7 @@ export function formatList(data: unknown, opts: ListShapeOptions = {}): string {
     );
   }
 
-  const body = capBytes(JSON.stringify(rows, null, 2), hints);
-  return `NOTE: ${hints.join("; ")}.\n\n${body}`;
+  return formatCapped(rows, hints);
 }
 
 // ── Registration factories ──────────────────────────────────────────────

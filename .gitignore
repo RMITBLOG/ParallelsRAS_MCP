@@ -7,3 +7,6 @@ build/
 scripts/
 spec/
 .env
+
+# Local security assessment artifacts
+security-reports/

@@ -12,6 +12,22 @@ import { z } from "zod";
 import { sanitiseError } from "../client.js";
 import { callDocsTool } from "../docs-client.js";
 
+export function isAllowedDocsUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.hostname === "docs.parallels.com" &&
+      (url.port === "" || url.port === "443") &&
+      url.username === "" &&
+      url.password === "" &&
+      url.hash === ""
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Shared annotations for all read-only documentation tools. */
 const READ_ONLY_ANNOTATIONS = {
   readOnlyHint: true,
@@ -72,6 +88,10 @@ export function register(server: McpServer): void {
         url: z
           .string()
           .url()
+          .refine(isAllowedDocsUrl, {
+            message:
+              "URL must be an HTTPS docs.parallels.com URL without credentials, a fragment, or a nonstandard port.",
+          })
           .describe("Full URL of the docs.parallels.com page to fetch."),
       },
     },

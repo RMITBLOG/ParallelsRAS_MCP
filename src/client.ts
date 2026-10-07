@@ -13,6 +13,8 @@
  * @created 2026-02-10
  */
 
+import { readResponseText } from "./http-body.js";
+
 const RAS_HOST = process.env.RAS_HOST ?? "";
 const RAS_USERNAME = process.env.RAS_USERNAME ?? "";
 const RAS_PASSWORD = process.env.RAS_PASSWORD ?? "";
@@ -21,9 +23,15 @@ const RAS_IGNORE_TLS = (process.env.RAS_IGNORE_TLS ?? "true").toLowerCase() === 
 
 /** Default request timeout in milliseconds (30 seconds). */
 const REQUEST_TIMEOUT_MS = 30_000;
+/** Bound complete RAS JSON responses before parsing them. */
+const MAX_RAS_RESPONSE_BYTES = 16 * 1024 * 1024;
 
 if (RAS_IGNORE_TLS) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+  console.error(
+    "WARNING: RAS_IGNORE_TLS=true disables TLS certificate verification for this process. " +
+      "Use only on a trusted network; prefer RAS_IGNORE_TLS=false with NODE_EXTRA_CA_CERTS.",
+  );
 }
 
 /**
@@ -49,10 +57,22 @@ export function validateConfig(): void {
  */
 function sanitiseError(err: unknown, context: string): string {
   const raw = err instanceof Error ? err.message : String(err);
-  // Remove anything that looks like a token or password value
+  // Defense in depth: caller-visible errors should never contain upstream bodies,
+  // but still scrub common structured and header-style secret formats.
   let sanitised = raw
-    .replace(/auth_token[=:]\s*\S+/gi, "auth_token=[REDACTED]")
-    .replace(/password[=:]\s*\S+/gi, "password=[REDACTED]");
+    .replace(
+      /\bAuthorization\s*:\s*(?:Basic|Bearer)\s+[^\s,;}]+/gi,
+      "Authorization: [REDACTED]",
+    )
+    .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [REDACTED]")
+    .replace(
+      /((?:password|passphrase|auth[_-]?token|access[_-]?token|refresh[_-]?token|id[_-]?token|api[_-]?(?:key|token)|secret|authorization)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?)[^,;}\]\r\n]+/gi,
+      "$1[REDACTED]",
+    )
+    .replace(
+      /((?:password|passphrase|auth[_-]?token|access[_-]?token|refresh[_-]?token|id[_-]?token|api[_-]?(?:key|token)|secret|authorization)(?:%22)?(?:%3A|%3D)(?:%22)?)[^&\s]+/gi,
+      "$1[REDACTED]",
+    );
   // Truncate excessively long API response bodies
   if (sanitised.length > 500) {
     sanitised = sanitised.substring(0, 500) + "... (truncated)";
@@ -63,6 +83,7 @@ function sanitiseError(err: unknown, context: string): string {
 class RasClient {
   private baseUrl: string;
   private authToken: string | null = null;
+  private loginPromise: Promise<void> | null = null;
   private headers: Record<string, string> = {
     "Content-Type": "application/json; api-version=1.0",
   };
@@ -88,44 +109,72 @@ class RasClient {
         username: RAS_USERNAME,
         password: RAS_PASSWORD,
       }),
+      redirect: "error",
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     if (!response.ok) {
-      const body = await response.text();
-      throw new Error(
-        `RAS login failed (HTTP ${response.status}): ${body.substring(0, 300)}`
-      );
+      await response.body?.cancel();
+      throw new Error(`RAS login failed (HTTP ${response.status})`);
     }
 
-    const data = await response.json();
-    this.authToken = data.authToken ?? data.AuthToken ?? null;
-
-    if (!this.authToken) {
+    const body = await readResponseText(response, MAX_RAS_RESPONSE_BYTES);
+    const data = JSON.parse(body) as { authToken?: unknown; AuthToken?: unknown };
+    const token = data.authToken ?? data.AuthToken;
+    if (typeof token !== "string" || !token) {
       throw new Error("RAS login response did not contain an auth token");
     }
+    this.authToken = token;
+  }
+
+  /** Coalesce simultaneous first-use and refresh logins into one request. */
+  private async ensureAuthenticated(): Promise<void> {
+    if (this.authToken) return;
+    if (!this.loginPromise) {
+      this.loginPromise = this.login().finally(() => {
+        this.loginPromise = null;
+      });
+    }
+    await this.loginPromise;
+  }
+
+  /** Refresh once for every group of requests that used the same stale token. */
+  private async refreshAfterUnauthorized(staleToken: string): Promise<void> {
+    if (this.authToken && this.authToken !== staleToken) return;
+    this.authToken = null;
+    await this.ensureAuthenticated();
   }
 
   /**
    * End the current RAS API session.
    */
   async logoff(): Promise<void> {
+    if (this.loginPromise) {
+      try {
+        await this.loginPromise;
+      } catch {
+        return;
+      }
+    }
     if (!this.authToken) return;
+
+    const token = this.authToken;
+    this.authToken = null;
 
     try {
       await fetch(`${this.baseUrl}/api/Session/logoff`, {
         method: "POST",
         headers: {
           ...this.headers,
-          auth_token: this.authToken,
+          auth_token: token,
         },
+        redirect: "error",
         signal: AbortSignal.timeout(5_000),
       });
     } catch {
       // Best-effort logoff — ignore errors on shutdown
     }
 
-    this.authToken = null;
   }
 
   /**
@@ -135,15 +184,18 @@ class RasClient {
   async get(path: string): Promise<unknown> {
     // Ensure we have a valid session
     if (!this.authToken) {
-      await this.login();
+      await this.ensureAuthenticated();
     }
+
+    const requestToken = this.authToken!;
 
     const fetchOptions = {
       method: "GET" as const,
       headers: {
         ...this.headers,
-        auth_token: this.authToken!,
+        auth_token: requestToken,
       },
+      redirect: "error" as const,
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     };
 
@@ -151,7 +203,8 @@ class RasClient {
 
     // Token may have expired — re-authenticate once and retry
     if (response.status === 401) {
-      await this.login();
+      await response.body?.cancel();
+      await this.refreshAfterUnauthorized(requestToken);
       response = await fetch(`${this.baseUrl}${path}`, {
         ...fetchOptions,
         headers: {
@@ -163,13 +216,12 @@ class RasClient {
     }
 
     if (!response.ok) {
-      const body = await response.text();
-      throw new Error(
-        `RAS API error (HTTP ${response.status}) on ${path}: ${body.substring(0, 300)}`
-      );
+      await response.body?.cancel();
+      throw new Error(`RAS API error (HTTP ${response.status}) on ${path}`);
     }
 
-    return response.json();
+    const body = await readResponseText(response, MAX_RAS_RESPONSE_BYTES);
+    return JSON.parse(body) as unknown;
   }
 }
 

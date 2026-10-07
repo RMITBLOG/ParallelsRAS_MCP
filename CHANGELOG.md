@@ -3,6 +3,28 @@
 All notable changes to the Parallels RAS MCP Server are documented here.
 Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Security
+
+- Reject automatic redirects on all credential-bearing RAS requests.
+- Create a fresh stateless MCP server and HTTP transport for every request.
+- Limit HTTP bodies to 1 MiB, JSON-RPC batches to 25 items, and concurrent
+  authenticated requests to 16; configure explicit server timeouts.
+- Coalesce concurrent RAS login and token-refresh requests into one operation.
+- Bound upstream response buffering and enforce the 64 KiB output ceiling in
+  encoded UTF-8 bytes, including documentation responses.
+- Restrict `ras_docs_get_page` to exact `https://docs.parallels.com` URLs.
+- Remove upstream response bodies from caller-visible errors and expand secret
+  redaction coverage.
+- Upgrade `@modelcontextprotocol/sdk` to 1.32.1 and patched transitive packages;
+  retain Node 18 compatibility by pinning `@hono/node-server` 1.19.17.
+
+### Documentation
+
+- Document the accepted compatibility risk of the default self-signed TLS mode
+  and the preferred `NODE_EXTRA_CA_CERTS` configuration.
+
 ## [1.2.0] — 2026-05-23
 
 Efficiency pass across all 41 read-only RAS tools, motivated by the observation
