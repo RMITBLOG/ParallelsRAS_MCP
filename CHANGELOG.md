@@ -5,6 +5,8 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-07
+
 ### Added
 
 - Expand the standalone skill with Parallels RAS architecture, diagnostic
@@ -16,16 +18,11 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
   write request tool; JSON, multipart file, and raw bodies are supported.
 - Keep write requests single-attempt and bound request bodies. HTTP write mode
   uses a 12 MiB request limit and four concurrent authenticated requests.
-
-## [1.3.0] - 2026-10-07
-
-### Added
-
 - Add a repository-local Parallels RAS skill and command runner for agents with
   shell access. It calls the shared RAS API client directly, without an MCP
   server process or client configuration, and has a Claude Code skill entry.
-- Package the skill as a standalone ZIP with a bundled Node runtime that can be
-  installed independently of this repository.
+- Package the skill as a standalone ZIP with a bundled JavaScript runner that
+  can be installed independently of this repository.
 
 ### Security
 
