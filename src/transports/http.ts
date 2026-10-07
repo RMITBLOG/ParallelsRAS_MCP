@@ -113,6 +113,9 @@ export async function startHttpTransport(createMcpServer: ServerFactory): Promis
       "Generate one with `openssl rand -hex 32` and set it in your environment."
     );
   }
+  if (WRITE_ENABLED && Buffer.byteLength(token, "utf8") < 32) {
+    throw new Error("MCP_HTTP_BEARER_TOKEN must contain at least 32 bytes when RAS_ENABLE_WRITE=true");
+  }
 
   const host = process.env.MCP_HTTP_HOST ?? DEFAULT_HOST;
   const port = Number(process.env.MCP_HTTP_PORT ?? DEFAULT_PORT);

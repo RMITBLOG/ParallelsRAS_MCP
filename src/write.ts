@@ -136,6 +136,7 @@ export async function executeWrite(value: unknown): Promise<{ status: number; da
       safeFieldName(field.name);
       const text = String(field.value);
       totalBytes += Buffer.byteLength(text, "utf8");
+      if (totalBytes > MAX_WRITE_BODY_BYTES) throw new Error("Multipart write body is too large");
       form.append(field.name, text);
     }
     for (const file of input.files ?? []) {

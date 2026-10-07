@@ -201,6 +201,7 @@ claude mcp add parallels-ras --transport http \
 - Restrict network reachability (firewall, VPN, private subnet). The bearer check is the only auth layer in the server itself.
 - The RAS admin credentials sit on the same host as the listener. Anyone with shell access on that host can read them. Do not run this on a multi-tenant box.
 - If writes are enabled, anyone holding the HTTP bearer token can attempt every documented write operation permitted to the configured RAS administrator. Use a RAS account with only the permissions needed for the deployment. MCP clients may apply their own approval prompts; the server's write gate is the `RAS_ENABLE_WRITE` configuration setting.
+- HTTP write mode refuses to start with a bearer token shorter than 32 bytes. Generate a random token such as `openssl rand -hex 32`; token length alone does not establish entropy.
 - HTTP clients share one RAS administrator session. Coordinate staged changes and `Settings/apply` calls because an apply operation can activate changes staged by another client.
 
 ## Available read tools (41 RAS tools + 2 documentation tools)
@@ -294,7 +295,7 @@ Set `RAS_ENABLE_WRITE=true` in the MCP server or standalone skill environment to
 
 | Tool | Description |
 |------|-------------|
-| `ras_write_operations` | Search the v21.2 catalog of 813 documented POST, PUT, and DELETE method/path pairs. Accepts `search`, `limit`, and `offset`. |
+| `ras_write_operations` | Search the v21.2 catalog of 808 documented POST, PUT, and DELETE method/path pairs. Accepts `search`, `limit`, and `offset`. |
 | `ras_write_request` | Send one catalog-matched write request. Accepts `method`, `path`, optional query pairs, a JSON body, multipart fields and base64 files, or a raw base64 body with a media type. |
 
 The client's own session logon and logoff endpoints are handled internally and are not exposed as write operations. `ras_write_request` rejects paths outside the documented catalog, paths outside `/api/`, redirects, mixed body formats, and bodies larger than 8 MiB. It does not retry a write after an error or timeout. Response output remains capped at 64 KiB. A successful request may still need a separate documented `POST /api/Settings/apply` operation before the change becomes active. Check the relevant endpoint in the [official API guide](https://download.parallels.com/ras/v21/en_US/Parallels-RAS-REST-API-Guide-21.pdf) for required fields and the apply workflow. File uploads and responses were tested with mocks, not a live farm.

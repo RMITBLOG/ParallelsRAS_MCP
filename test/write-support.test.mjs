@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import net from "node:net";
 import test from "node:test";
 
@@ -14,13 +14,43 @@ const { WRITE_OPERATIONS } = await import("../build/write-operations.js");
 const { rasClient } = await import("../build/client.js");
 
 test("writes are disabled by default and documented operations are discoverable only after opt-in", async () => {
-  assert.equal(WRITE_OPERATIONS.length, 813);
+  assert.equal(WRITE_OPERATIONS.length, 808);
+  assert.ok(WRITE_OPERATIONS.some(([method, path]) => method === "DELETE" &&
+    path === "/api/AVD/DefaultSettings/MultiSession/FSLogix/OfficeContainer/CCDLocations"));
+  for (const [method, path] of WRITE_OPERATIONS) {
+    assert.equal(path.startsWith("/api/"), true);
+    assert.equal(path.split("{").length, path.split("}").length);
+    assert.equal(WRITE_OPERATIONS.some(([otherMethod, otherPath]) =>
+      otherMethod === method && otherPath.startsWith(path) &&
+      otherPath.length > path.length && otherPath[path.length] !== "/"), false,
+      `Truncated catalog entry: ${method} ${path}`);
+  }
   assert.throws(() => listWriteOperations(), /disabled/);
   await assert.rejects(executeWrite({ method: "POST", path: "/api/Settings/apply" }), /disabled/);
   process.env.RAS_ENABLE_WRITE = "true";
   const matches = listWriteOperations("Settings/apply", 10);
   assert.deepEqual(matches, [{ method: "POST", path: "/api/Settings/apply" }]);
   process.env.RAS_ENABLE_WRITE = "false";
+});
+
+test("HTTP write mode rejects a short bearer token before listening", () => {
+  const result = spawnSync(process.execPath, ["build/index.js"], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      RAS_HOST: "ras.test",
+      RAS_USERNAME: "administrator",
+      RAS_PASSWORD: "synthetic-password",
+      RAS_IGNORE_TLS: "false",
+      RAS_ENABLE_WRITE: "true",
+      MCP_TRANSPORT: "http",
+      MCP_HTTP_BEARER_TOKEN: "short",
+    },
+    encoding: "utf8",
+    timeout: 5000,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /at least 32 bytes/);
 });
 
 test("write calls enforce the v21.2 method/path catalog and do not replay on 401", async (t) => {
@@ -106,6 +136,11 @@ test("multipart files are encoded safely and body formats cannot be mixed", asyn
     method: "POST", path: "/api/Certificates/ImportPfx",
     files: [{ name: "PfxFile", fileName: "../secret.pfx", mediaType: "application/x-pkcs12", base64: "YQ==" }],
   }), /metadata/);
+  await assert.rejects(executeWrite({
+    method: "POST", path: "/api/Certificates/ImportPfx",
+    formFields: [{ name: "Name", value: "x".repeat(8 * 1024 * 1024 + 1) }],
+  }), /too large/);
+  assert.equal(upload, undefined);
   const result = await executeWrite({
     method: "POST", path: "/api/Certificates/ImportPfx",
     formFields: [{ name: "Name", value: "test" }],
