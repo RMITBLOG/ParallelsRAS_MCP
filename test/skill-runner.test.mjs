@@ -19,16 +19,18 @@ const env = {
 test("skill runner discovers the shared read-only RAS catalog", async () => {
   const { stdout } = await run(process.execPath, [fileURLToPath(script), "list"], { env });
   const result = JSON.parse(stdout);
-  assert.equal(result.tools.length, 41);
+  assert.equal(result.tools.length, 43);
   assert.ok(result.tools.some((tool) => tool.name === "ras_farm_get_version"));
   assert.ok(result.tools.some((tool) => tool.name === "ras_sessions_list"));
+  assert.ok(result.tools.some((tool) => tool.name === "ras_docs_search"));
+  assert.ok(result.tools.some((tool) => tool.name === "ras_docs_get_page"));
   assert.equal(stdout.includes("synthetic-password"), false);
 });
 
 test("skill runner exposes opt-in writes and accepts mutation JSON only on stdin", () => {
   const writeEnv = { ...env, RAS_ENABLE_WRITE: "true" };
   const list = JSON.parse(execFileSync(process.execPath, [fileURLToPath(script), "list"], { env: writeEnv, encoding: "utf8" }));
-  assert.equal(list.tools.length, 43);
+  assert.equal(list.tools.length, 45);
   assert.ok(list.tools.some((tool) => tool.name === "ras_write_request"));
 
   const output = execFileSync(process.execPath, [
@@ -41,6 +43,23 @@ test("skill runner exposes opt-in writes and accepts mutation JSON only on stdin
   });
   assert.match(output, /"status": 204/);
   assert.doesNotMatch(output, /synthetic-password|synthetic-token/);
+});
+
+test("skill runner searches and fetches documentation with URL validation", () => {
+  const args = ["--require", fileURLToPath(fakeApi), fileURLToPath(script), "call"];
+  const search = execFileSync(process.execPath,
+    [...args, "ras_docs_search", JSON.stringify({ query: "RDS hosts" })],
+    { env, encoding: "utf8" });
+  assert.match(search, /Synthetic documentation search result/);
+
+  const page = execFileSync(process.execPath,
+    [...args, "ras_docs_get_page", JSON.stringify({ url: "https://docs.parallels.com/landing/ras" })],
+    { env, encoding: "utf8" });
+  assert.match(page, /Synthetic documentation page/);
+
+  assert.throws(() => execFileSync(process.execPath,
+    [...args, "ras_docs_get_page", JSON.stringify({ url: "https://docs.parallels.com.attacker.invalid/" })],
+    { env, encoding: "utf8", stdio: "pipe" }), /Expected an HTTPS docs.parallels.com URL/);
 });
 
 test("skill runner calls the RAS client directly and narrows its output", async () => {

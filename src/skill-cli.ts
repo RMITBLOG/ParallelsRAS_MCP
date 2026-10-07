@@ -1,5 +1,6 @@
-/** Standalone read-only RAS skill CLI. Bundled into an importable skill. */
+/** Standalone RAS skill CLI. Bundled into an importable skill. */
 import { rasClient, sanitiseError } from "./client.js";
+import { callDocsTool, isAllowedDocsUrl } from "./docs-client.js";
 import { formatList, parseListOptions, type ListShapeOptions } from "./tools/_format.js";
 import { RAS_TOOLS } from "./tools/catalog.js";
 import { executeWrite, isWriteEnabled, listWriteOperations } from "./write.js";
@@ -53,11 +54,36 @@ async function main(): Promise<void> {
         title,
         description,
         inputs: kind === "list" ? ["fields", "filter", "limit"] : [],
-      })), ...(isWriteEnabled() ? [
+      })),
+      { name: "ras_docs_search", title: "Search Parallels Documentation", description: "Search official Parallels documentation", inputs: ["query"] },
+      { name: "ras_docs_get_page", title: "Get Parallels Documentation Page", description: "Fetch an official Parallels documentation page", inputs: ["url"] },
+      ...(isWriteEnabled() ? [
         { name: "ras_write_operations", title: "Find RAS write operations", description: "Search the documented v21.2 write catalog", inputs: ["search", "limit", "offset"] },
         { name: "ras_write_request", title: "Change Parallels RAS configuration", description: "Execute one documented write request", inputs: ["method", "path", "query", "jsonBody", "formFields", "files", "rawBase64", "contentType"] },
       ] : [])],
     }, null, 2));
+    return;
+  }
+
+  if (toolName === "ras_docs_search" || toolName === "ras_docs_get_page") {
+    const key = toolName === "ras_docs_search" ? "query" : "url";
+    const value = argumentsObject[key];
+    if (Object.keys(argumentsObject).length !== 1 || typeof value !== "string" ||
+        (key === "query" ? value.length === 0 : !isAllowedDocsUrl(value))) {
+      fail(key === "query" ? "Expected a nonempty query string." :
+        "Expected an HTTPS docs.parallels.com URL without credentials, fragment, or nonstandard port.");
+      return;
+    }
+    try {
+      const content = await callDocsTool(
+        toolName === "ras_docs_search" ? "searchDocumentation" : "getPage",
+        { [key]: value },
+      );
+      console.log(formatList(content));
+    } catch (error) {
+      fail(sanitiseError(error, toolName === "ras_docs_search" ?
+        "Failed to search Parallels documentation" : "Failed to fetch Parallels documentation page"));
+    }
     return;
   }
 

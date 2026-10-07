@@ -15,6 +15,22 @@ const DOCS_TIMEOUT_MS = 30_000;
 const DOCS_RESPONSE_LIMIT_BYTES = 1024 * 1024;
 const DOCS_OUTPUT_LIMIT_BYTES = 64 * 1024;
 
+export function isAllowedDocsUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.hostname === "docs.parallels.com" &&
+      (url.port === "" || url.port === "443") &&
+      url.username === "" &&
+      url.password === "" &&
+      url.hash === ""
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Single text/markdown chunk returned by the upstream documentation tools. */
 export type DocsContent = { type: "text"; text: string };
 

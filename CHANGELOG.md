@@ -7,6 +7,8 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Give the standalone skill the same two Parallels documentation lookups as the
+  MCP server, with the existing URL and response-size safeguards.
 - Add opt-in RAS write support to the MCP server and standalone skill with
   `RAS_ENABLE_WRITE=true`. A v21.2 method/path catalog constrains the generic
   write request tool; JSON, multipart file, and raw bodies are supported.

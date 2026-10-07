@@ -10,23 +10,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { sanitiseError } from "../client.js";
-import { callDocsTool } from "../docs-client.js";
-
-export function isAllowedDocsUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return (
-      url.protocol === "https:" &&
-      url.hostname === "docs.parallels.com" &&
-      (url.port === "" || url.port === "443") &&
-      url.username === "" &&
-      url.password === "" &&
-      url.hash === ""
-    );
-  } catch {
-    return false;
-  }
-}
+import { callDocsTool, isAllowedDocsUrl } from "../docs-client.js";
+export { isAllowedDocsUrl } from "../docs-client.js";
 
 /** Shared annotations for all read-only documentation tools. */
 const READ_ONLY_ANNOTATIONS = {

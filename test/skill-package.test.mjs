@@ -45,7 +45,7 @@ test("ZIP imports and runs without a source checkout or node_modules", async (t)
   };
 
   const list = await run(process.execPath, [script, "list"], { cwd: extracted, env });
-  assert.equal(JSON.parse(list.stdout).tools.length, 41);
+  assert.equal(JSON.parse(list.stdout).tools.length, 43);
   const call = await run(process.execPath, [
     "--require", fakeApiCopy, script, "call", "ras_infra_get_agents",
     JSON.stringify({ fields: ["hostname"], limit: 1 }),
@@ -55,7 +55,7 @@ test("ZIP imports and runs without a source checkout or node_modules", async (t)
 
   const writeEnv = { ...env, RAS_ENABLE_WRITE: "true" };
   const writeList = await run(process.execPath, [script, "list"], { cwd: extracted, env: writeEnv });
-  assert.equal(JSON.parse(writeList.stdout).tools.length, 43);
+  assert.equal(JSON.parse(writeList.stdout).tools.length, 45);
   const write = execFileSync(process.execPath, [
     "--require", fakeApiCopy, script, "call", "ras_write_request", "-",
   ], {

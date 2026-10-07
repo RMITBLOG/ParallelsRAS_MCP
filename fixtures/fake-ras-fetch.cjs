@@ -1,5 +1,16 @@
 globalThis.fetch = async (url, options = {}) => {
   const requestPath = new URL(url).pathname;
+  if (url === "https://docs.parallels.com/landing/~gitbook/mcp" && options.method === "POST") {
+    const request = JSON.parse(options.body);
+    const name = request.params.name;
+    const text = name === "searchDocumentation" ? "Synthetic documentation search result" :
+      name === "getPage" ? "Synthetic documentation page" : null;
+    if (text === null) throw new Error("Unexpected documentation tool");
+    return new Response(`data: ${JSON.stringify({ jsonrpc: "2.0", id: request.id,
+      result: { content: [{ type: "text", text }] } })}\n\n`, {
+      headers: { "Content-Type": "text/event-stream" },
+    });
+  }
   if (requestPath === "/api/Session/logon" && options.method === "POST") {
     return new Response(JSON.stringify({ authToken: "synthetic-token" }), { status: 200 });
   }
