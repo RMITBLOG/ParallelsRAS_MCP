@@ -7,6 +7,8 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Expand the standalone skill with Parallels RAS architecture, diagnostic
+  routing, and administration references based on the v21 manuals.
 - Give the standalone skill the same two Parallels documentation lookups as the
   MCP server, with the existing URL and response-size safeguards.
 - Add opt-in RAS write support to the MCP server and standalone skill with

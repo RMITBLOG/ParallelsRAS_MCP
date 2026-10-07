@@ -36,6 +36,8 @@ const fixedTime = new Date("1980-01-01T00:00:00Z");
 const files = {
   "parallels-ras/SKILL.md": [new Uint8Array(readFileSync(path.join(skillRoot, "SKILL.md"))), { mtime: fixedTime }],
   "parallels-ras/scripts/ras-query.mjs": [new Uint8Array(readFileSync(script)), { mtime: fixedTime }],
+  "parallels-ras/references/ras-domain.md": [new Uint8Array(readFileSync(path.join(skillRoot, "references", "ras-domain.md"))), { mtime: fixedTime }],
+  "parallels-ras/references/ras-administration.md": [new Uint8Array(readFileSync(path.join(skillRoot, "references", "ras-administration.md"))), { mtime: fixedTime }],
 };
 mkdirSync(path.dirname(archive), { recursive: true });
 writeFileSync(archive, zipSync(files, { level: 9 }));

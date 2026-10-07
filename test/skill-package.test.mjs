@@ -23,8 +23,14 @@ test("ZIP imports and runs without a source checkout or node_modules", async (t)
   const entries = unzipSync(new Uint8Array(readFileSync(archive)));
   assert.deepEqual(Object.keys(entries).sort(), [
     "parallels-ras/SKILL.md",
+    "parallels-ras/references/ras-administration.md",
+    "parallels-ras/references/ras-domain.md",
     "parallels-ras/scripts/ras-query.mjs",
   ]);
+  for (const name of Object.keys(entries)) {
+    assert.deepEqual(Buffer.from(entries[name]),
+      readFileSync(fileURLToPath(new URL(`../.agents/skills/${name}`, import.meta.url))));
+  }
   for (const [name, contents] of Object.entries(entries)) {
     const destination = path.join(extracted, name);
     mkdirSync(path.dirname(destination), { recursive: true });
