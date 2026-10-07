@@ -13,7 +13,7 @@ Two transports are supported, selected via the `MCP_TRANSPORT` environment varia
 - **`stdio`** (default) — launched as a local subprocess by the MCP client (Claude Desktop, Claude Code, Cursor, etc.). Intended for an individual administrator on their own workstation, or for development and test environments. Credentials come from the launching process's environment; there is no network listener.
 - **`http`** — streamable-HTTP listener with a required bearer token. Intended for trusted-network deployments where one server is shared by multiple clients (e.g. behind a reverse proxy that adds TLS). Defaults to binding `127.0.0.1:3000`; binding to all interfaces is opt-in.
 
-In either mode this server holds a RAS administrator session and exposes 41 read-only tools. It does not expose write or destructive tools or provide multi-tenancy. HTTP mode bounds individual requests, batches, and concurrent work, but does not provide per-client rate limiting — treat it as an admin-equivalent service and protect access accordingly.
+In either mode this server holds a RAS administrator session and exposes 41 read-only RAS tools plus two documentation tools. It does not expose write or destructive tools or provide multi-tenancy. HTTP mode bounds individual requests, batches, and concurrent work, but does not provide per-client rate limiting — treat it as an admin-equivalent service and protect access accordingly.
 
 **API compatibility:** verified against the **Parallels RAS v21** REST API. Resources used are stable across v18–v21.
 
@@ -87,6 +87,19 @@ this file; it should contain only the public CA certificate chain.
 ## Configuration
 
 The examples below cover the **stdio** transport, which is the default and what most users want. For the **HTTP** transport, see [Running over HTTP](#running-over-http) further down.
+
+### Skill option for local agents
+
+The repository also includes a [Parallels RAS skill](.agents/skills/parallels-ras/SKILL.md) for Codex and other agents that can read skills and run local commands. It provides a workflow for the same tools without requiring an MCP server entry in the agent's configuration. The skill's runner starts this repository's stdio MCP server for each command, so `npm install`, `npm run build`, and the same `RAS_*` environment variables are still required. It does not implement a separate RAS API client.
+
+When working in this repository, invoke `$parallels-ras` or ask the agent to inspect the RAS farm. The skill is in `.agents/skills/parallels-ras/`. To use a copy from another working directory, set `PARALLELS_RAS_MCP_ROOT` to the absolute path of this built repository. For a direct local check:
+
+```bash
+node .agents/skills/parallels-ras/scripts/ras-query.mjs list
+node .agents/skills/parallels-ras/scripts/ras-query.mjs call ras_farm_get_version
+```
+
+The existing stdio and HTTP MCP configurations below remain available when your client supports MCP tool connections.
 
 ### Claude Desktop
 
@@ -178,7 +191,7 @@ claude mcp add parallels-ras --transport http \
 - Restrict network reachability (firewall, VPN, private subnet). The bearer check is the only auth layer in the server itself.
 - The RAS admin credentials sit on the same host as the listener — anyone with shell access on that host can read them. Do not run this on a multi-tenant box.
 
-## Available Tools (41 total)
+## Available Tools (41 RAS tools + 2 documentation tools)
 
 All tools are read-only and annotated with `readOnlyHint: true` for automatic approval in compatible clients.
 

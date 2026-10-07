@@ -5,6 +5,12 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Add a repository-local Parallels RAS skill and command runner for agents with
+  shell access. It uses the existing read-only MCP server without a separate
+  MCP client configuration.
+
 ### Security
 
 - Reject automatic redirects on all credential-bearing RAS requests.
