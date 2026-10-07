@@ -2,7 +2,7 @@
 
 A community-maintained, read-only [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server for querying Parallels Remote Application Server (RAS) infrastructure via the [RAS REST API](https://docs.parallels.com/landing/ras-rest-api-guide).
 
-Gives AI assistants visibility into your RAS environment — infrastructure, site settings, policies, publishing, and sessions — without making any changes.
+Gives AI assistants read-only visibility into your RAS infrastructure, site settings, policies, publishing, and sessions.
 
 > Not affiliated with Parallels International GmbH. "Parallels" is a trademark of its respective owner.
 
@@ -10,12 +10,12 @@ Gives AI assistants visibility into your RAS environment — infrastructure, sit
 
 Two transports are supported, selected via the `MCP_TRANSPORT` environment variable:
 
-- **`stdio`** (default) — launched as a local subprocess by the MCP client (Claude Desktop, Claude Code, Cursor, etc.). Intended for an individual administrator on their own workstation, or for development and test environments. Credentials come from the launching process's environment; there is no network listener.
-- **`http`** — streamable-HTTP listener with a required bearer token. Intended for trusted-network deployments where one server is shared by multiple clients (e.g. behind a reverse proxy that adds TLS). Defaults to binding `127.0.0.1:3000`; binding to all interfaces is opt-in.
+- **`stdio`** (default): Launched as a local subprocess by the MCP client (Claude Desktop, Claude Code, Cursor, etc.). Intended for an individual administrator on their own workstation, or for development and test environments. Credentials come from the launching process's environment; there is no network listener.
+- **`http`**: A streamable HTTP listener with a required bearer token. Intended for trusted network deployments where one server is shared by multiple clients (e.g. behind a reverse proxy that adds TLS). Defaults to binding `127.0.0.1:3000`; binding to all interfaces is opt-in.
 
-In either mode this server holds a RAS administrator session and exposes 41 read-only RAS tools plus two documentation tools. It does not expose write or destructive tools or provide multi-tenancy. HTTP mode bounds individual requests, batches, and concurrent work, but does not provide per-client rate limiting — treat it as an admin-equivalent service and protect access accordingly.
+In either mode this server holds a RAS administrator session and exposes 41 read-only RAS tools plus two documentation tools. It does not expose write or destructive tools or provide multi-tenancy. HTTP mode bounds individual requests, batches, and concurrent work, but does not provide per-client rate limiting. Treat it as an admin-equivalent service and protect access accordingly.
 
-**API compatibility:** verified against the **Parallels RAS v21** REST API. Resources used are stable across v18–v21.
+**API compatibility:** verified against the **Parallels RAS v21** REST API. Resources used are stable from v18 through v21.
 
 ## Prerequisites
 
@@ -38,19 +38,19 @@ npm run build
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `RAS_HOST` | Yes | — | RAS server hostname or IP address |
-| `RAS_USERNAME` | Yes | — | Administrator username |
-| `RAS_PASSWORD` | Yes | — | Administrator password |
+| `RAS_HOST` | Yes | - | RAS server hostname or IP address |
+| `RAS_USERNAME` | Yes | - | Administrator username |
+| `RAS_PASSWORD` | Yes | - | Administrator password |
 | `RAS_PORT` | No | `20443` | REST API port |
 | `RAS_IGNORE_TLS` | No | `true` | Skip TLS certificate verification for self-signed RAS deployments. See the security tradeoff below. |
-| `NODE_EXTRA_CA_CERTS` | No | — | PEM bundle containing the private CA that issued the RAS certificate. Set this when using `RAS_IGNORE_TLS=false`. |
+| `NODE_EXTRA_CA_CERTS` | No | - | PEM bundle containing the private CA that issued the RAS certificate. Set this when using `RAS_IGNORE_TLS=false`. |
 
 ### Transport
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `MCP_TRANSPORT` | No | `stdio` | `stdio` or `http` |
-| `MCP_HTTP_BEARER_TOKEN` | HTTP only | — | Bearer token clients must present in `Authorization: Bearer …`. Server refuses to start without it. Generate with `openssl rand -hex 32`. |
+| `MCP_HTTP_BEARER_TOKEN` | HTTP only | - | Bearer token clients must present in `Authorization: Bearer <token>`. Server refuses to start without it. Generate with `openssl rand -hex 32`. |
 | `MCP_HTTP_HOST` | No | `127.0.0.1` | Bind address. Set to `0.0.0.0` to expose on all interfaces (front with TLS termination). |
 | `MCP_HTTP_PORT` | No | `3000` | Listen port. |
 
@@ -90,9 +90,11 @@ The examples below cover the **stdio** transport, which is the default and what 
 
 ### Skill option for local agents
 
-The repository also includes a [Parallels RAS skill](.agents/skills/parallels-ras/SKILL.md) for Codex and a [Claude Code skill entry point](.claude/skills/parallels-ras/SKILL.md). It uses a local command that imports the shared authenticated RAS API client and queries the same 41 read-only RAS endpoints directly. No MCP server process, protocol, or client configuration is involved in the skill path. The skill still needs `npm install`, `npm run build`, and the same `RAS_*` environment variables. The two documentation tools remain available through the MCP server.
+The repository also includes an importable [Parallels RAS skill](.agents/skills/parallels-ras/SKILL.md) and a [Claude Code project entry point](.claude/skills/parallels-ras/SKILL.md). Its bundled Node command queries the same 41 read-only RAS endpoints directly. The skill requires Node.js 18.14.1 or later and the same `RAS_*` environment variables, but needs no npm install, source checkout, MCP server, or MCP client configuration. The two documentation tools remain available through the MCP server.
 
-When working in this repository, invoke `$parallels-ras` in Codex or `/parallels-ras` in Claude Code, or ask the agent to inspect the RAS farm. To use a copy from another working directory, set `PARALLELS_RAS_MCP_ROOT` to the absolute path of this built repository. For a direct local check:
+Download [the standalone skill ZIP](skill-packages/parallels-ras-skill.zip) and extract its single `parallels-ras/` folder into `~/.claude/skills/` for Claude Code or `~/.codex/skills/` for Codex. The agent must run locally where it can reach the RAS API. From source, regenerate the folder and ZIP with `npm install` followed by `npm run package:skill`.
+
+When working in this repository, invoke `$parallels-ras` in Codex or `/parallels-ras` in Claude Code, or ask the agent to inspect the RAS farm. For a direct local check:
 
 ```bash
 node .agents/skills/parallels-ras/scripts/ras-query.mjs list
@@ -133,7 +135,7 @@ Set environment variables in your shell or in the Claude Code MCP configuration.
 
 ### Cursor
 
-In Cursor settings, go to **Features → MCP Servers** and add:
+In Cursor settings, go to **Features > MCP Servers** and add:
 
 - **Name:** `parallels-ras`
 - **Command:** `node /path/to/ParallelsRAS_MCP/build/index.js`
@@ -151,7 +153,7 @@ with the required environment variables set in the client's MCP server configura
 
 ## Running over HTTP
 
-The HTTP transport implements [MCP Streamable HTTP](https://modelcontextprotocol.io/specification/) and runs as a long-lived process. Use it when you want one server shared by multiple clients on a trusted network — typically behind a reverse proxy that terminates TLS.
+The HTTP transport implements [MCP Streamable HTTP](https://modelcontextprotocol.io/specification/) and runs as a long-lived process. Use it when you want one server shared by multiple clients on a trusted network, typically behind a reverse proxy that terminates TLS.
 
 ### Start the server
 
@@ -186,10 +188,10 @@ claude mcp add parallels-ras --transport http \
 
 ### Production checklist
 
-- **Always** front this with TLS — a reverse proxy (nginx, Caddy, Traefik) terminating HTTPS, with the MCP server bound to `127.0.0.1` and reached only via the proxy.
-- Treat `MCP_HTTP_BEARER_TOKEN` as a credential — at least 32 bytes of entropy, stored in a secret manager, rotated when staff leave.
+- **Always** front this with TLS through a reverse proxy (nginx, Caddy, Traefik) that terminates HTTPS. Bind the MCP server to `127.0.0.1` and reach it only through the proxy.
+- Treat `MCP_HTTP_BEARER_TOKEN` as a credential with at least 32 bytes of entropy. Store it in a secret manager and rotate it when staff leave.
 - Restrict network reachability (firewall, VPN, private subnet). The bearer check is the only auth layer in the server itself.
-- The RAS admin credentials sit on the same host as the listener — anyone with shell access on that host can read them. Do not run this on a multi-tenant box.
+- The RAS admin credentials sit on the same host as the listener. Anyone with shell access on that host can read them. Do not run this on a multi-tenant box.
 
 ## Available Tools (41 RAS tools + 2 documentation tools)
 
@@ -197,9 +199,9 @@ All tools are read-only and annotated with `readOnlyHint: true` for automatic ap
 
 **List tools** (sessions, hosts, certs, agents, published items, etc.) accept three optional inputs for narrowing large responses:
 
-- `fields: string[]` — keep only these top-level keys on each row.
-- `filter: Record<string, string|number|boolean>` — equality match on top-level fields (AND across keys; strings are case-insensitive).
-- `limit: number` — cap rows after filtering. Default 50, hard max 200.
+- `fields: string[]`: Keep only these top-level keys on each row.
+- `filter: Record<string, string|number|boolean>`: Match top-level fields by equality (AND across keys; strings are case-insensitive).
+- `limit: number`: Cap rows after filtering. Default 50, hard max 200.
 
 Responses lead with a one-line `NOTE:` header summarising total rows, filter matches, and truncation. A 64 KB byte safety net applies to every response.
 
@@ -236,7 +238,7 @@ Responses lead with a one-line `NOTE:` header summarising total rows, filter mat
 | `ras_site_get_url_redirection` | URL redirection rules |
 | `ras_site_get_cpu_optimization` | CPU optimization settings |
 
-> FSLogix is not exposed at site scope by the REST API — it is configured per host pool / per AVD template, or via PowerShell.
+> FSLogix is not exposed at site scope by the REST API. It is configured per host pool, per AVD template, or via PowerShell.
 
 ### Policies (1)
 
@@ -299,7 +301,7 @@ To add a new tool:
 
 `registerListTool` automatically wires the `fields` / `filter` / `limit` schema and routes the response through `formatList`. `registerObjectTool` skips the schema but still applies the 64 KB byte safety net.
 
-Module file names (`infrastructure.ts`, `site-settings.ts`, etc.) are an internal grouping for related tools. They do **not** correspond to URL segments — the real RAS API is flat under `/api/<PascalCaseResource>` (e.g. `/api/Agent`, `/api/License`, `/api/MFA`).
+Module file names (`infrastructure.ts`, `site-settings.ts`, etc.) group related tools internally. They do **not** correspond to URL segments. The real RAS API is flat under `/api/<PascalCaseResource>` (e.g. `/api/Agent`, `/api/License`, `/api/MFA`).
 
 ### API reference
 
@@ -308,8 +310,8 @@ Module file names (`infrastructure.ts`, `site-settings.ts`, etc.) are an interna
 
 ## Roadmap
 
-- **Write operations** — out of scope for this repo. A separate server should host any tool that mutates RAS state, so the read-only tools here can stay safe to auto-approve.
-- **OAuth / OIDC for the HTTP transport** — currently a single shared bearer token. Per-user identity would let multiple clients share a deployment without sharing credentials.
+- **Write operations:** Out of scope for this repo. A separate server should host any tool that mutates RAS state, so the read-only tools here can stay safe to auto-approve.
+- **OAuth / OIDC for the HTTP transport:** The server currently uses a single shared bearer token. Per-user identity would let multiple clients share a deployment without sharing credentials.
 
 ## Contributing
 
@@ -319,9 +321,9 @@ Issues and pull requests are welcome. Please open an issue first for anything be
 
 See [CHANGELOG.md](CHANGELOG.md) for the full release log. Recent highlights:
 
-- **v1.2.0** — efficiency pass across all 41 tools: `fields` / `filter` / `limit` inputs on every list tool, default row cap of 50, 64 KB byte safety net on every response, shared registration factories. Backward-compatible at the MCP protocol level.
-- **v1.1.0** — opt-in streamable-HTTP transport with bearer-token auth, alongside the existing stdio transport.
-- **v1.0.1** — corrects all 41 tool paths against the Parallels RAS v21 REST API and adds a build-time path verifier.
+- **v1.2.0:** Efficiency pass across all 41 tools: `fields` / `filter` / `limit` inputs on every list tool, default row cap of 50, 64 KB byte safety net on every response, shared registration factories. Backward-compatible at the MCP protocol level.
+- **v1.1.0:** Opt-in streamable HTTP transport with bearer-token auth, alongside the existing stdio transport.
+- **v1.0.1:** Corrects all 41 tool paths against the Parallels RAS v21 REST API and adds a build-time path verifier.
 
 ## License
 

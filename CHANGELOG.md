@@ -10,6 +10,8 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 - Add a repository-local Parallels RAS skill and command runner for agents with
   shell access. It calls the shared RAS API client directly, without an MCP
   server process or client configuration, and has a Claude Code skill entry.
+- Package the skill as a standalone ZIP with a bundled Node runtime that can be
+  installed independently of this repository.
 
 ### Security
 
@@ -31,33 +33,33 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 - Document the accepted compatibility risk of the default self-signed TLS mode
   and the preferred `NODE_EXTRA_CA_CERTS` configuration.
 
-## [1.2.0] — 2026-05-23
+## [1.2.0] - 2026-05-23
 
 Efficiency pass across all 41 read-only RAS tools, motivated by the observation
 that flat list dumps and 1:1 API mirrors push too much raw data into the
 model's context on every call. All changes are backward-compatible at the MCP
-protocol level — every new input is optional, no tools were removed or
+protocol level - every new input is optional, no tools were removed or
 renamed, and all 41 paths still verify against the v21 OpenAPI spec.
 
 ### Added
 
-- **`fields` input on every list tool** — top-level key projection. Callers
+- **`fields` input on every list tool** - top-level key projection. Callers
   request only the columns they need; unknown keys are silently dropped.
   Example: `ras_infra_get_rds_hosts({ fields: ["hostname","status","activeSessions"] })`.
-- **`filter` input on every list tool** — equality filter on top-level
+- **`filter` input on every list tool** - equality filter on top-level
   fields, AND across keys. String values match case-insensitively (RAS API
   casing varies between resources). Example:
   `ras_sessions_list({ filter: { state: "Active", user: "jdoe" } })`.
-- **`limit` input on every list tool** — caps rows after filtering. Default
+- **`limit` input on every list tool** - caps rows after filtering. Default
   50, hard maximum 200.
-- **Default row cap of 50 on every list response** — protects the model's
+- **Default row cap of 50 on every list response** - protects the model's
   context window on large farms. When the cap is hit, the response leads
   with a hint, e.g.
   `NOTE: 487 rows total; showing first 50; narrow with filter or raise limit (max 200).`
 - **64 KB byte safety net on every tool response** (list and single-object
   endpoints). If a payload exceeds this it is truncated with a hint to
   project with `fields`.
-- **`src/tools/_format.ts`** — new shared module owning the schema
+- **`src/tools/_format.ts`** - new shared module owning the schema
   (`LIST_INPUT_SCHEMA`), shaping helper (`formatList`), and registration
   factories (`registerListTool` / `registerObjectTool`).
 
@@ -65,14 +67,14 @@ renamed, and all 41 paths still verify against the v21 OpenAPI spec.
 
 - **All 7 tool files refactored** to declare tools as `ToolDef` records and
   register them through the shared factories. Each tool file is now
-  ~60–70% smaller and the GET → JSON → MCP-text pattern lives in one place.
+  ~60-70% smaller and the GET to JSON to MCP text pattern lives in one place.
 - **List responses now lead with a one-line `NOTE:` header** describing what
   the model is seeing (total rows, filter match count, truncation status).
   Single-object responses are unchanged unless they exceed 64 KB.
-- **Tool descriptions tightened** — removed redundant phrasing and pushed
+- **Tool descriptions tightened** - removed redundant phrasing and pushed
   parameter documentation into Zod `.describe()` strings, where the model
   reads it directly from the JSON schema.
-- **`scripts/verify-tool-paths.mjs`** — extended to recognise the new
+- **`scripts/verify-tool-paths.mjs`** - extended to recognise the new
   `path: "/api/..."` declaration form alongside the legacy direct call form.
 
 ### Notes for callers
@@ -96,15 +98,15 @@ renamed, and all 41 paths still verify against the v21 OpenAPI spec.
 
 ### Suggested follow-ups (not in this release)
 
-- **Aggregate tools** (e.g. `ras_health_overview`, `ras_capacity_snapshot`) —
+- **Aggregate tools** (e.g. `ras_health_overview`, `ras_capacity_snapshot`) -
   collapse common multi-tool admin workflows into one call. Sits cleanly on
   top of the new shaping primitives.
 - **MCP `resources` for reference data** (themes, certs, SAML IdPs, farm
-  config) — move static reference data out of the tool list and into the
+  config) - move static reference data out of the tool list and into the
   `resources` capability, so the model reads them on demand rather than
   spending tool slots on them.
 
-## [1.1.0] — 2026-04-28
+## [1.1.0] - 2026-04-28
 
 - Adds an opt-in streamable-HTTP transport with bearer-token auth, alongside
   the existing stdio transport.
