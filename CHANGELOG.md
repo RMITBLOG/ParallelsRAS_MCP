@@ -5,6 +5,8 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-07
+
 ### Added
 
 - Add a repository-local Parallels RAS skill and command runner for agents with

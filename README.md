@@ -2,7 +2,7 @@
 
 A community-maintained, read-only [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server for querying Parallels Remote Application Server (RAS) infrastructure via the [RAS REST API](https://docs.parallels.com/landing/ras-rest-api-guide).
 
-Gives AI assistants read-only visibility into your RAS infrastructure, site settings, policies, publishing, and sessions.
+Gives AI assistants read-only visibility into your RAS infrastructure, site settings, policies, publishing, and sessions. Use it as an MCP server or import the standalone skill for a local agent.
 
 > Not affiliated with Parallels International GmbH. "Parallels" is a trademark of its respective owner.
 
@@ -13,17 +13,19 @@ Two transports are supported, selected via the `MCP_TRANSPORT` environment varia
 - **`stdio`** (default): Launched as a local subprocess by the MCP client (Claude Desktop, Claude Code, Cursor, etc.). Intended for an individual administrator on their own workstation, or for development and test environments. Credentials come from the launching process's environment; there is no network listener.
 - **`http`**: A streamable HTTP listener with a required bearer token. Intended for trusted network deployments where one server is shared by multiple clients (e.g. behind a reverse proxy that adds TLS). Defaults to binding `127.0.0.1:3000`; binding to all interfaces is opt-in.
 
-In either mode this server holds a RAS administrator session and exposes 41 read-only RAS tools plus two documentation tools. It does not expose write or destructive tools or provide multi-tenancy. HTTP mode bounds individual requests, batches, and concurrent work, but does not provide per-client rate limiting. Treat it as an admin-equivalent service and protect access accordingly.
+In either mode this server holds a RAS administrator session and exposes 41 read-only RAS tools plus two documentation tools. The standalone skill queries the same 41 RAS endpoints directly and does not expose the documentation tools. Neither option provides write or destructive tools or multi-tenancy. HTTP mode bounds individual requests, batches, and concurrent work, but does not provide per-client rate limiting. Treat access as admin-equivalent and protect it accordingly.
 
 **API compatibility:** verified against the **Parallels RAS v21** REST API. Resources used are stable from v18 through v21.
+
+**Current source version:** v1.3.0 adds the portable direct-API skill and MCP security hardening. See [History](#history) and [CHANGELOG.md](CHANGELOG.md) for details.
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 18.14.1 or later
-- npm
 - Access to a Parallels RAS server with the REST API enabled (port 20443 by default)
+- npm, only when building the MCP server or skill from source
 
-## Installation
+## Install the MCP server from source
 
 ```bash
 git clone https://github.com/RMITBLOG/ParallelsRAS_MCP.git
@@ -90,9 +92,9 @@ The examples below cover the **stdio** transport, which is the default and what 
 
 ### Skill option for local agents
 
-The repository also includes an importable [Parallels RAS skill](.agents/skills/parallels-ras/SKILL.md) and a [Claude Code project entry point](.claude/skills/parallels-ras/SKILL.md). Its bundled Node command queries the same 41 read-only RAS endpoints directly. The skill requires Node.js 18.14.1 or later and the same `RAS_*` environment variables, but needs no npm install, source checkout, MCP server, or MCP client configuration. The two documentation tools remain available through the MCP server.
+The repository also includes an importable [Parallels RAS skill](.agents/skills/parallels-ras/SKILL.md) and a [Claude Code project entry point](.claude/skills/parallels-ras/SKILL.md). Its bundled JavaScript runner queries the same 41 read-only RAS endpoints directly. The skill requires Node.js 18.14.1 or later and the same `RAS_*` environment variables, but needs no npm install, source checkout, MCP server, or MCP client configuration. The two documentation tools remain available through the MCP server.
 
-Download [the standalone skill ZIP](skill-packages/parallels-ras-skill.zip) and extract its single `parallels-ras/` folder into `~/.claude/skills/` for Claude Code or `~/.codex/skills/` for Codex. The agent must run locally where it can reach the RAS API. From source, regenerate the folder and ZIP with `npm install` followed by `npm run package:skill`.
+Download [the standalone skill ZIP](skill-packages/parallels-ras-skill.zip) and extract its single `parallels-ras/` folder into `~/.claude/skills/` for Claude Code or `~/.codex/skills/` for Codex. The resulting path should be `~/.claude/skills/parallels-ras/SKILL.md` or `~/.codex/skills/parallels-ras/SKILL.md`. Set `RAS_HOST`, `RAS_USERNAME`, and `RAS_PASSWORD` in the local agent's environment; the agent must be able to reach the RAS API. From source, regenerate the folder and ZIP with `npm install` followed by `npm run package:skill`.
 
 When working in this repository, invoke `$parallels-ras` in Codex or `/parallels-ras` in Claude Code, or ask the agent to inspect the RAS farm. For a direct local check:
 
@@ -297,7 +299,7 @@ To add a new tool:
    }
    ```
 3. If you created a new file, export a `register(server)` function that loops over your `ToolDef` arrays calling `registerListTool` and/or `registerObjectTool`, then import and call it from `src/index.ts`.
-4. Run `npm run build`. The build runs `scripts/verify-tool-paths.mjs`, which fails the build if the `path:` you declared isn't a real GET in the v21 OpenAPI spec.
+4. Check the new `path:` against the v21 REST API reference, then run `npm run build` and `npm test`. The current build compiles TypeScript; it does not automatically verify new API paths against the OpenAPI spec.
 
 `registerListTool` automatically wires the `fields` / `filter` / `limit` schema and routes the response through `formatList`. `registerObjectTool` skips the schema but still applies the 64 KB byte safety net.
 
@@ -321,6 +323,7 @@ Issues and pull requests are welcome. Please open an issue first for anything be
 
 See [CHANGELOG.md](CHANGELOG.md) for the full release log. Recent highlights:
 
+- **v1.3.0:** Portable standalone skill ZIP for Claude Code and Codex, plus hardened RAS requests, HTTP request limits, output handling, and secret redaction. The self-signed certificate compatibility default remains documented.
 - **v1.2.0:** Efficiency pass across all 41 tools: `fields` / `filter` / `limit` inputs on every list tool, default row cap of 50, 64 KB byte safety net on every response, shared registration factories. Backward-compatible at the MCP protocol level.
 - **v1.1.0:** Opt-in streamable HTTP transport with bearer-token auth, alongside the existing stdio transport.
 - **v1.0.1:** Corrects all 41 tool paths against the Parallels RAS v21 REST API and adds a build-time path verifier.
