@@ -8,7 +8,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerListTool, registerObjectTool, type ToolDef } from "./_format.js";
 
-const LIST_TOOLS: ToolDef[] = [
+export const LIST_TOOLS: ToolDef[] = [
   {
     name: "ras_farm_get_administrators",
     title: "Farm Administrators",
@@ -21,7 +21,7 @@ const LIST_TOOLS: ToolDef[] = [
   },
 ];
 
-const OBJECT_TOOLS: ToolDef[] = [
+export const OBJECT_TOOLS: ToolDef[] = [
   {
     name: "ras_farm_get_config",
     title: "Farm Configuration",

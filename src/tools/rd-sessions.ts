@@ -7,10 +7,10 @@
  * @created 2026-02-10
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerListTool } from "./_format.js";
+import { registerListTool, type ToolDef } from "./_format.js";
 
-export function register(server: McpServer): void {
-  registerListTool(server, {
+export const TOOLS: ToolDef[] = [
+  {
     name: "ras_sessions_list",
     title: "Active RD Sessions",
     description:
@@ -22,5 +22,9 @@ export function register(server: McpServer): void {
       "everything on large farms.",
     path: "/api/RDSession",
     errorContext: "Failed to retrieve RD sessions",
-  });
+  },
+];
+
+export function register(server: McpServer): void {
+  for (const def of TOOLS) registerListTool(server, def);
 }

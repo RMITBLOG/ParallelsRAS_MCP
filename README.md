@@ -90,9 +90,9 @@ The examples below cover the **stdio** transport, which is the default and what 
 
 ### Skill option for local agents
 
-The repository also includes a [Parallels RAS skill](.agents/skills/parallels-ras/SKILL.md) for Codex and other agents that can read skills and run local commands. It provides a workflow for the same tools without requiring an MCP server entry in the agent's configuration. The skill's runner starts this repository's stdio MCP server for each command, so `npm install`, `npm run build`, and the same `RAS_*` environment variables are still required. It does not implement a separate RAS API client.
+The repository also includes a [Parallels RAS skill](.agents/skills/parallels-ras/SKILL.md) for Codex and a [Claude Code skill entry point](.claude/skills/parallels-ras/SKILL.md). It uses a local command that imports the shared authenticated RAS API client and queries the same 41 read-only RAS endpoints directly. No MCP server process, protocol, or client configuration is involved in the skill path. The skill still needs `npm install`, `npm run build`, and the same `RAS_*` environment variables. The two documentation tools remain available through the MCP server.
 
-When working in this repository, invoke `$parallels-ras` or ask the agent to inspect the RAS farm. The skill is in `.agents/skills/parallels-ras/`. To use a copy from another working directory, set `PARALLELS_RAS_MCP_ROOT` to the absolute path of this built repository. For a direct local check:
+When working in this repository, invoke `$parallels-ras` in Codex or `/parallels-ras` in Claude Code, or ask the agent to inspect the RAS farm. To use a copy from another working directory, set `PARALLELS_RAS_MCP_ROOT` to the absolute path of this built repository. For a direct local check:
 
 ```bash
 node .agents/skills/parallels-ras/scripts/ras-query.mjs list

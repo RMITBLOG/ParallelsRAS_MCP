@@ -5,10 +5,10 @@
  * @created 2026-02-10
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerListTool } from "./_format.js";
+import { registerListTool, type ToolDef } from "./_format.js";
 
-export function register(server: McpServer): void {
-  registerListTool(server, {
+export const TOOLS: ToolDef[] = [
+  {
     name: "ras_policies_list",
     title: "Client Policies",
     description:
@@ -20,5 +20,9 @@ export function register(server: McpServer): void {
       "you don't need every rule.",
     path: "/api/ClientPolicies",
     errorContext: "Failed to retrieve policies",
-  });
+  },
+];
+
+export function register(server: McpServer): void {
+  for (const def of TOOLS) registerListTool(server, def);
 }

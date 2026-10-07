@@ -8,7 +8,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerListTool, registerObjectTool, type ToolDef } from "./_format.js";
 
-const LIST_TOOLS: ToolDef[] = [
+export const LIST_TOOLS: ToolDef[] = [
   {
     name: "ras_pub_get_rds_apps",
     title: "Published RDS Apps",
@@ -94,7 +94,7 @@ const LIST_TOOLS: ToolDef[] = [
   },
 ];
 
-const OBJECT_TOOLS: ToolDef[] = [
+export const OBJECT_TOOLS: ToolDef[] = [
   {
     name: "ras_pub_get_status",
     title: "Publishing Status",

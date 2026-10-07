@@ -8,8 +8,8 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - Add a repository-local Parallels RAS skill and command runner for agents with
-  shell access. It uses the existing read-only MCP server without a separate
-  MCP client configuration.
+  shell access. It calls the shared RAS API client directly, without an MCP
+  server process or client configuration, and has a Claude Code skill entry.
 
 ### Security
 

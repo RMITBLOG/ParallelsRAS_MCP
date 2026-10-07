@@ -8,7 +8,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerListTool, type ToolDef } from "./_format.js";
 
-const TOOLS: ToolDef[] = [
+export const TOOLS: ToolDef[] = [
   {
     name: "ras_infra_get_agents",
     title: "RAS Agents",

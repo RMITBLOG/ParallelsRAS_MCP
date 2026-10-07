@@ -75,6 +75,11 @@ export const LIST_INPUT_SCHEMA = {
     ),
 };
 
+/** Validate local skill inputs against the same shape advertised by MCP. */
+export function parseListOptions(value: unknown): ListShapeOptions {
+  return z.object(LIST_INPUT_SCHEMA).strict().parse(value);
+}
+
 // ── Response shaping ────────────────────────────────────────────────────
 
 function matches(
