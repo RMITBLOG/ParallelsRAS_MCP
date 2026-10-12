@@ -295,6 +295,15 @@ Responses lead with a one-line `NOTE:` header summarising total rows, filter mat
 |------|-------------|
 | `ras_sessions_list` | Active remote desktop sessions |
 
+### Documentation (2)
+
+| Tool | Description |
+|------|-------------|
+| `ras_docs_search` | Search the official Parallels documentation; returns excerpts with titles and links |
+| `ras_docs_get_page` | Fetch one documentation page in full as Markdown |
+
+These two query Parallels' public documentation rather than your farm. `ras_docs_get_page` accepts HTTPS `docs.parallels.com` URLs only.
+
 ## Optional write support
 
 Set `RAS_ENABLE_WRITE=true` in the MCP server or standalone skill environment to expose two additional tools. When unset, no write tool is registered or listed. The setting grants configuration-level access; the server does not implement a separate per-action confirmation step.
