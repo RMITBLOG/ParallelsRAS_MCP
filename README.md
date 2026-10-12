@@ -6,6 +6,10 @@ Gives AI assistants visibility into your RAS infrastructure, site settings, poli
 
 > Not affiliated with Parallels International GmbH. "Parallels" is a trademark of its respective owner.
 
+## See it in 65 seconds
+
+A short film of what this project does. It shows an agent auditing a lab farm from one request and rating the findings red, amber and green, then covers what the server can read and how writes stay off until you opt in. It has narration, and the on-screen text carries the same message if you watch it muted.
+
 ## Scope and intended use
 
 Two transports are supported, selected via the `MCP_TRANSPORT` environment variable:
